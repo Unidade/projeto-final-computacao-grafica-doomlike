@@ -5,9 +5,9 @@
 void setupIndoorLightOnce()
 {
     glEnable(GL_LIGHT1);
-    GLfloat lampDiffuse[]  = {1.7f, 1.7f, 1.8f, 1.0f};
+    GLfloat lampDiffuse[] = {1.7f, 1.7f, 1.8f, 1.0f};
     GLfloat lampSpecular[] = {0, 0, 0, 1.0f};
-    GLfloat lampAmbient[]  = {0.98f, 0.99f, 1.41f, 1.0f};
+    GLfloat lampAmbient[] = {0.98f, 0.99f, 1.41f, 1.0f};
     glLightfv(GL_LIGHT1, GL_DIFFUSE, lampDiffuse);
     glLightfv(GL_LIGHT1, GL_SPECULAR, lampSpecular);
     glLightfv(GL_LIGHT1, GL_AMBIENT, lampAmbient);
@@ -40,8 +40,8 @@ void setupFlashlightOnce()
 {
     glEnable(GL_LIGHT2);
 
-    GLfloat ambient[]  = {0.00f, 0.00f, 0.00f, 1.0f};
-    GLfloat diffuse[]  = {1.90f, 1.85f, 1.65f, 1.0f};
+    GLfloat ambient[] = {0.00f, 0.00f, 0.00f, 1.0f};
+    GLfloat diffuse[] = {1.90f, 1.85f, 1.65f, 1.0f};
     GLfloat specular[] = {0.75f, 0.70f, 0.60f, 1.0f};
 
     glLightfv(GL_LIGHT2, GL_AMBIENT, ambient);

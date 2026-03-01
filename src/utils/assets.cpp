@@ -56,6 +56,7 @@ bool loadAssets(GameAssets &a)
     a.texAmmo = carregaTextura("assets/066.png");
 
     a.texSkydome = carregaTextura("assets/menu_bg.png");
+    a.texSkydome = carregaTextura("assets/menu_bg.png");
 
     a.texGunHUD = a.texLinternOn;
     a.texHudFundo = carregaTextura("assets/088.png");
