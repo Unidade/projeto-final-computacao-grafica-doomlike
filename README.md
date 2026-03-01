@@ -45,7 +45,7 @@ sudo pacman -S cmake gcc glew freeglut mesa openal
 2. Open MSYS2 UCRT64 terminal and run:
 
 ```bash
-pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-glew mingw-w64-ucrt-x86_64-freeglut mingw-w64-ucrt-x86_64-openal
+pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-glew mingw-w64-x86_64-freeglut mingw-w64-x86_64-openal
 ```
 
 ---
