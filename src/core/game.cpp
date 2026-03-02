@@ -264,7 +264,7 @@ void gameUpdate(float dt)
         float ddz = camZ - gLevel.doorZ;
         if (ddx * ddx + ddz * ddz < 4.0f) // within 2 units of door
         {
-            bool hasBatteries = (g.player.batteriesCollected >= GameConfig::BATTERIES_REQUIRED);
+            bool hasBatteries = (gLevel.batteriesCollectedInMap >= gLevel.batteriesRequiredInMap);
             int cl = gLevel.currentLevel;
             bool hasKey = (cl >= 1 && cl <= 3 && g.player.hasLevelKey[cl]);
 
@@ -382,8 +382,8 @@ void gameRender()
     // Monta o estado do HUD a partir das variáveis globais do jogo
     HudState hs;
     hs.playerHealth = g.player.health;
-    hs.batteriesCollected = g.player.batteriesCollected;
-    hs.batteriesRequired = GameConfig::BATTERIES_REQUIRED;
+    hs.batteriesCollected = gLevel.batteriesCollectedInMap;
+    hs.batteriesRequired = gLevel.batteriesRequiredInMap;
     int cl = gLevel.currentLevel;
     hs.currentLevel = cl;
     hs.hasLevelKey = (cl >= 1 && cl <= 3) && g.player.hasLevelKey[cl];
