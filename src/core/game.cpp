@@ -131,6 +131,12 @@ bool gameInit(const char *mapPath)
     gHudTex.texHealthOverlay = gAssets.texHealthOverlay;
     for (int i = 0; i < 3; i++)
         gHudTex.texKeyHud[i] = gAssets.texKey[i];
+    gHudTex.texBattery0 = gAssets.texBattery0;
+    gHudTex.texBattery25 = gAssets.texBattery25;
+    gHudTex.texBattery50 = gAssets.texBattery50;
+    gHudTex.texBattery75 = gAssets.texBattery75;
+    gHudTex.texBattery100 = gAssets.texBattery100;
+    gHudTex.progBatteryFlash = gAssets.progBatteryFlash;
 
     for (int i = 0; i < 5; i++)
     {
@@ -140,7 +146,11 @@ bool gameInit(const char *mapPath)
     }
 
     g.r.texHealth = gAssets.texHealth;
-    g.r.texBattery = gAssets.texBattery;
+    g.r.texBattery0 = gAssets.texBattery0;
+    g.r.texBattery25 = gAssets.texBattery25;
+    g.r.texBattery50 = gAssets.texBattery50;
+    g.r.texBattery75 = gAssets.texBattery75;
+    g.r.texBattery100 = gAssets.texBattery100;
     for (int i = 0; i < 3; i++)
         g.r.texKey[i] = gAssets.texKey[i];
 
@@ -492,7 +502,7 @@ void gameRender()
     else if (g.state == GameState::VITORIA)
     {
         drawWorld3D();
-        menuRender(janelaW, janelaH, g.time, "LUZES APAGADAS — VOCE ESCAPOU!", "Pressione ENTER para Jogar Novamente", g.r);
+        menuRender(janelaW, janelaH, g.time, "VOCE ESCAPOU!", "Pressione ENTER para Jogar Novamente", g.r);
     }
     // --- ESTADO: PAUSADO ---
     else if (g.state == GameState::PAUSADO)

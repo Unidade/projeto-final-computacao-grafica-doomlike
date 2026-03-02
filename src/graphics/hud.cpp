@@ -221,6 +221,36 @@ static void drawStatusBar(int w, int h, const HudTextures& tex, const HudState& 
     float xBattery = w * 0.52f;
     glColor3fv(colLbl);
     uiDrawStrokeText(xBattery, hBar * 0.20f, "BATERIAS (FASE)", scaleLbl);
+
+    GLuint texBat = tex.texBattery0;
+    if (s.batteriesRequired > 0)
+    {
+        float pctBat = (float)s.batteriesCollected / (float)s.batteriesRequired;
+        if (pctBat >= 1.0f) texBat = tex.texBattery100;
+        else if (pctBat >= 0.75f) texBat = tex.texBattery75;
+        else if (pctBat >= 0.50f) texBat = tex.texBattery50;
+        else if (pctBat >= 0.25f) texBat = tex.texBattery25;
+    }
+
+    if (texBat)
+    {
+        glEnable(GL_TEXTURE_2D);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glBindTexture(GL_TEXTURE_2D, texBat);
+        glColor3f(1, 1, 1);
+        float bw = hBar * 1.4f;
+        float bh = hBar * 0.7f;
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 1); glVertex2f(xBattery, hBar * 0.25f);
+        glTexCoord2f(1, 1); glVertex2f(xBattery + bw, hBar * 0.25f);
+        glTexCoord2f(1, 0); glVertex2f(xBattery + bw, hBar * 0.25f + bh);
+        glTexCoord2f(0, 0); glVertex2f(xBattery, hBar * 0.25f + bh);
+        glEnd();
+        glDisable(GL_BLEND);
+        glDisable(GL_TEXTURE_2D);
+    }
+
     // Verde brilhante se completo, verde normal se em progresso
     bool allDone = (s.batteriesRequired > 0 && s.batteriesCollected >= s.batteriesRequired);
     if (allDone)
@@ -228,7 +258,7 @@ static void drawStatusBar(int w, int h, const HudTextures& tex, const HudState& 
     else
         glColor3f(0.6f, 0.9f, 0.4f); // verde suave normal
     glPushMatrix();
-    glTranslatef(xBattery + 5.0f, hBar * 0.50f, 0);
+    glTranslatef(xBattery + hBar * 1.5f + 5.0f, hBar * 0.50f, 0);
     glScalef(scaleNum, scaleNum, 1);
     {
         std::string sBat = std::to_string(s.batteriesCollected) + "/" + std::to_string(s.batteriesRequired);

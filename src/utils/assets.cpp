@@ -52,8 +52,17 @@ bool loadAssets(GameAssets &a)
     a.texDamage = carregaTextura("assets/damage.png");
 
     a.texHealth = carregaTextura("assets/health.png");
-    a.texBattery = carregaTextura("assets/battery.png");
-    if (!a.texBattery) a.texBattery = a.texHealth; // fallback if battery.png missing
+    a.texBattery0 = carregaTextura("assets/items/battery0.png");
+    a.texBattery25 = carregaTextura("assets/items/battery25.png");
+    a.texBattery50 = carregaTextura("assets/items/battery50.png");
+    a.texBattery75 = carregaTextura("assets/items/battery75.png");
+    a.texBattery100 = carregaTextura("assets/items/battery100.png");
+
+    if (!a.texBattery100) a.texBattery100 = a.texHealth;
+    if (!a.texBattery0) a.texBattery0 = a.texBattery100;
+    if (!a.texBattery25) a.texBattery25 = a.texBattery100;
+    if (!a.texBattery50) a.texBattery50 = a.texBattery100;
+    if (!a.texBattery75) a.texBattery75 = a.texBattery100;
 
     a.texKey[0] = carregaTextura("assets/items/Key0_Icon.png");
     a.texKey[1] = carregaTextura("assets/items/Key1_Icon.png");

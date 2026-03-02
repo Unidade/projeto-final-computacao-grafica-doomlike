@@ -542,7 +542,7 @@ void drawEntities(const std::vector<Enemy> &enemies, const std::vector<Item> &it
         if (item.type == ITEM_HEALTH)
             drawSprite(item.x, item.z, 0.7f, 0.7f, r.texHealth, camX, camZ);
         else if (item.type == ITEM_BATTERY)
-            drawSprite(item.x, item.z, 0.7f, 0.7f, r.texBattery, camX, camZ);
+            drawSprite(item.x, item.z, 0.7f, 0.7f, r.texBattery100, camX, camZ);
         else if (item.type == ITEM_KEY)
         {
             int kl = (item.keyLevel >= 1 && item.keyLevel <= 3) ? (item.keyLevel - 1) : 0;

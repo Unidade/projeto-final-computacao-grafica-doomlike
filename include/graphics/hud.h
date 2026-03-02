@@ -10,6 +10,11 @@ struct HudTextures
     GLuint texLinternOff = 0;
     GLuint texDamage = 0;
     GLuint texHealthOverlay = 0;
+    GLuint texBattery0 = 0;
+    GLuint texBattery25 = 0;
+    GLuint texBattery50 = 0;
+    GLuint texBattery75 = 0;
+    GLuint texBattery100 = 0;
     GLuint texKeyHud[3] = {0, 0, 0}; // Key0, Key1, Key2 for levels 1-3
     GLuint progBatteryFlash = 0;     // shader de glow verde
 };

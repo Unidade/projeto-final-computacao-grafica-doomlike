@@ -39,7 +39,11 @@ struct RenderAssets
     GLuint texEnemiesDamage[5] = {0};
 
     GLuint texHealth = 0;
-    GLuint texBattery = 0;
+    GLuint texBattery0 = 0;
+    GLuint texBattery25 = 0;
+    GLuint texBattery50 = 0;
+    GLuint texBattery75 = 0;
+    GLuint texBattery100 = 0;
     GLuint texKey[3] = {0, 0, 0};
 
     GLuint progSangue = 0;

@@ -18,7 +18,11 @@ struct GameAssets
     GLuint texEnemyDamage = 0;  // Leva dano
     GLuint texHealthOverlay = 0; // Tela de cura
     GLuint texHealth = 0;
-    GLuint texBattery = 0;
+    GLuint texBattery0 = 0;
+    GLuint texBattery25 = 0;
+    GLuint texBattery50 = 0;
+    GLuint texBattery75 = 0;
+    GLuint texBattery100 = 0;
     GLuint texKey[3] = {0, 0, 0}; // Key0=level1, Key1=level2, Key2=level3
     GLuint texLinternOn = 0;
     GLuint texLinternOff = 0;
