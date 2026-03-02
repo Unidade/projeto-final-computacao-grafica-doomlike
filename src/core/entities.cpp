@@ -1,6 +1,8 @@
 #include "core/entities.h"
 #include "core/game.h"
 #include "core/camera.h"
+#include "core/config.h"
+#include "core/light_system.h"
 #include "audio/audio_system.h"
 #include <cmath>
 
@@ -20,6 +22,7 @@ bool isWalkable(float x, float z)
     if (tx < 0 || tx >= (int)data[tz].size()) return false;
 
     char c = data[tz][tx];
+    // Walls block movement
     if (c == '1' || c == '2') return false;
 
     return true;
@@ -48,6 +51,19 @@ void updateEntities(float dt)
         }
 
         if (en.hurtTimer > 0.0f) en.hurtTimer -= dt;
+
+        // --- LUZES APAGADAS: Enemies freeze inside safe zones ---
+        // If the enemy is inside the illuminated area of any active light post,
+        // it cannot move or attack — it stays idle.
+        bool enemyInSafeZone = isPositionInSafeZone(
+            lvl.posts, en.x, en.z, GameConfig::SAFE_ZONE_RADIUS);
+
+        if (enemyInSafeZone)
+        {
+            // Enemy is in the light — frozen, can't chase
+            en.state = STATE_IDLE;
+            continue;
+        }
 
         float dx = camX - en.x;
         float dz = camZ - en.z;

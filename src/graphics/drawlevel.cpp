@@ -14,8 +14,8 @@
 
 // Config do grid
 static const float TILE = 4.0f;      // tamanho do tile no mundo
-static const float CEILING_H = 3.8f; // teto mais alto
-static const float WALL_H = 4.0f;    // altura da parede
+static const float CEILING_H = 5.0f; // teto alto para cone de luz amplo
+static const float WALL_H = 6.0f;    // parede mais alta que o teto
 static const float EPS_Y = 0.001f;   // evita z-fighting
 
 static const GLfloat kAmbientOutdoor[] = {0.04f, 0.04f, 0.06f, 1.0f}; // noite escura
@@ -24,27 +24,12 @@ static const GLfloat kAmbientIndoor[] = {0.02f, 0.02f, 0.03f, 1.0f};  // interio
 // ======================
 // CONFIG ÚNICA DO CULLING (XZ)
 // ======================
-static float gCullHFovDeg = 170.0f;
-static float gCullNearTiles = 2.0f;
-static float gCullMaxDistTiles = 20.0f;
+static float gCullHFovDeg = 210.0f;     // FOV amplo: evitar paredes sumindo nas bordas
+static float gCullNearTiles = 3.0f;     // perto não faz culling angular
+static float gCullMaxDistTiles = 35.0f; // render mais longe — corrige paredes piscando
 
-// ---------------------------------------------------------------------------
-// Shader de chão com iluminação per-fragment — alimentado por setFloorLightShader()
-// ---------------------------------------------------------------------------
-static GLuint gProgLightFloor = 0;
-static float  gFloorLightX    = 0.0f; // posição world X do poste mais próximo
-static float  gFloorLightZ    = 0.0f; // posição world Z
-static float  gConeRadius     = 0.0f; // raio do cone no chão
-static float  gLightIntensity = 0.0f; // intensidade atual (0-1)
 
-void setFloorLightShader(GLuint prog, float lx, float lz, float radius, float intensity)
-{
-    gProgLightFloor = prog;
-    gFloorLightX    = lx;
-    gFloorLightZ    = lz;
-    gConeRadius     = radius;
-    gLightIntensity = intensity;
-}
+
 
 // Retorna TRUE se deve renderizar o objeto no plano XZ (distância + cone de FOV)
 // - Usa as configs globais gCull*
@@ -219,22 +204,9 @@ static void desenhaQuadChao(float x, float z, float tile, float tilesUV)
     }
 }
 
-static void desenhaTileChao(float x, float z, GLuint texChaoX, bool temTeto)
+static void desenhaTileChao(float x, float z, GLuint texChaoX, bool /*temTeto*/)
 {
-    // Usa o shader de luz per-fragment se disponível
-    if (gProgLightFloor && gConeRadius > 0.0f)
-    {
-        glUseProgram(gProgLightFloor);
-        glUniform2f(glGetUniformLocation(gProgLightFloor, "uLightPos"),
-                    gFloorLightX, gFloorLightZ);
-        glUniform1f(glGetUniformLocation(gProgLightFloor, "uConeRadius"), gConeRadius);
-        glUniform1f(glGetUniformLocation(gProgLightFloor, "uIntensity"),  gLightIntensity);
-        glUniform1i(glGetUniformLocation(gProgLightFloor, "uTexture"), 0);
-    }
-    else
-    {
-        glUseProgram(0);
-    }
+    glUseProgram(0);
 
     glColor3f(1, 1, 1);
     glActiveTexture(GL_TEXTURE0);
@@ -337,29 +309,31 @@ static void desenhaParedeCuboCompleto(float x, float z, GLuint texParedeX)
     glEnd();
 }
 
-static void desenhaTileLava(float x, float z, const RenderAssets &r, float time)
+// Desenha a porta de saída — um quad com textura de porta
+static void desenhaTileDoor(float x, float z, const RenderAssets &r)
 {
-    glUseProgram(r.progLava);
+    // Chão sob a porta
+    desenhaTileChao(x, z, r.texChao, false);
 
-    GLint locTime = glGetUniformLocation(r.progLava, "uTime");
-    GLint locStr = glGetUniformLocation(r.progLava, "uStrength");
-    GLint locScr = glGetUniformLocation(r.progLava, "uScroll");
-    GLint locHeat = glGetUniformLocation(r.progLava, "uHeat");
-    GLint locTex = glGetUniformLocation(r.progLava, "uTexture");
-
-    glUniform1f(locTime, time);
-    glUniform1f(locStr, 1.0f);
-    glUniform2f(locScr, 0.1f, 0.0f);
-    glUniform1f(locHeat, 0.6f);
-
-    bindTexture0(r.texLava);
-    glUniform1i(locTex, 0);
-
-    glColor3f(1, 1, 1);
-    desenhaQuadChao(x, z, TILE, 2.0f);
+    // A porta em si: quad vertical no centro do tile
+    float doorW = TILE * 0.8f;
+    float doorH = WALL_H * 0.7f;
+    float hw = doorW * 0.5f;
 
     glUseProgram(0);
-    desenhaQuadTeto(x, z, TILE, 2.0f);
+    glColor3f(1, 1, 1);
+    glBindTexture(GL_TEXTURE_2D, r.texDoor);
+
+    // Desenha em ambos os lados para ser visível de qualquer direção
+    glDisable(GL_CULL_FACE);
+    glBegin(GL_QUADS);
+    glNormal3f(0, 0, 1);
+    glTexCoord2f(0, 1); glVertex3f(x - hw, 0.0f, z);
+    glTexCoord2f(1, 1); glVertex3f(x + hw, 0.0f, z);
+    glTexCoord2f(1, 0); glVertex3f(x + hw, doorH, z);
+    glTexCoord2f(0, 0); glVertex3f(x - hw, doorH, z);
+    glEnd();
+    glEnable(GL_CULL_FACE);
 }
 
 static void desenhaTileSangue(float x, float z, const RenderAssets &r, float time)
@@ -401,7 +375,7 @@ static char getTileAt(const MapLoader &map, int tx, int tz)
 
 static void drawFace(float wx, float wz, int face, char neighbor, GLuint texParedeInternaX, float time)
 {
-    bool outside = (neighbor == '0' || neighbor == 'L' || neighbor == 'B');
+    bool outside = (neighbor == '0' || neighbor == 'B' || neighbor == 'D');
 
     if (outside)
     {
@@ -444,7 +418,7 @@ void drawLevel(const MapLoader &map, float px, float pz, float dx, float dz, con
 
             bool isEntity = (c == 'J' || c == 'T' || c == 'M' || c == 'K' ||
                              c == 'G' || c == 'H' || c == 'A' || c == 'E' ||
-                             c == 'F' || c == 'I' || c == 'P');
+                             c == 'F' || c == 'I' || c == 'P' || c == 'D');
 
             if (isEntity)
             {
@@ -495,9 +469,9 @@ void drawLevel(const MapLoader &map, float px, float pz, float dx, float dz, con
                 drawFace(wx, wz, 2, vizDireita, r.texParedeInterna, time);
                 drawFace(wx, wz, 3, vizEsq, r.texParedeInterna, time);
             }
-            else if (c == 'L')
+            else if (c == 'D')
             {
-                desenhaTileLava(wx, wz, r, time);
+                desenhaTileDoor(wx, wz, r);
             }
             else if (c == 'B')
             {

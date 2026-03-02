@@ -30,7 +30,11 @@ struct AudioSystem {
     ALuint bufClickReload = 0;
     ALuint bufKill = 0;
 
-    ALuint bufLava = 0;
+    ALuint bufMonsterChase = 0;
+    ALuint bufMonsterAttack = 0;
+    ALuint bufMonsterIdle = 0;
+    ALuint bufMonsterSpot = 0;
+
     ALuint bufBreath = 0;
     ALuint bufGrunt = 0;
 
@@ -46,9 +50,6 @@ struct AudioSystem {
     ALuint srcClickReload = 0;
     ALuint srcKill = 0;
 
-    ALuint srcLava = 0;
-    bool lavaPlaying = false;
-
     ALuint srcBreath = 0;
 
     ALuint srcGrunt = 0;
@@ -57,10 +58,12 @@ struct AudioSystem {
     bool stepPlaying = false;
 
     // Inimigos
-    std::vector<ALuint> srcEnemies;       // loop 3D por inimigo
+    std::vector<ALuint> srcEnemies;       // loop 3D por inimigo (usado para chase/idle)
     std::vector<ALuint> srcEnemyScreams;  // one-shot 3D por inimigo
+    std::vector<ALuint> srcEnemySpots;    // one-shot 3D por inimigo
+    std::vector<ALuint> srcEnemyAttacks;  // one-shot 3D por inimigo
     std::vector<float> enemyScreamTimer;  // cooldown randômico
-    std::vector<int> enemyPrevState;      // detectar morte "agora"
+    std::vector<int> enemyPrevState;      // detectar mudança de estado
 };
 
 // -------- API do módulo --------

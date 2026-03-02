@@ -8,7 +8,7 @@ struct GameAssets
     GLuint texChao = 0;
     GLuint texParede = 0;
     GLuint texSangue = 0;
-    GLuint texLava = 0;
+    GLuint texDoor = 0;
     GLuint texChaoInterno = 0;
     GLuint texParedeInterna = 0;
     GLuint texTeto = 0;
@@ -35,8 +35,6 @@ struct GameAssets
 
     // shaders
     GLuint progSangue = 0;
-    GLuint progLava = 0;
-    GLuint progLightFloor = 0; // spotlight no chão (per-fragment)
 
     GLuint texSkydome = 0;
 };

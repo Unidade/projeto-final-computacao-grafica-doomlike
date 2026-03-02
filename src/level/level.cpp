@@ -108,6 +108,12 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
                 lp.intensity = 1.0f;
                 lvl.posts.push_back(lp);
             }
+            else if (c == 'D') // Exit Door
+            {
+                lvl.hasDoor = true;
+                lvl.doorX = wx;
+                lvl.doorZ = wz;
+            }
         }
     }
 
