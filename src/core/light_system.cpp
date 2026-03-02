@@ -104,12 +104,19 @@ LightCycleState lightSystemGetState(const LightSystem& sys)
 float nearestActivePostDist(const std::vector<LightPost>& posts, float px, float pz)
 {
     float minDist = FLT_MAX;
-    for (const auto& p : posts) {
-        if (!p.active || p.intensity < 0.05f) continue;
+    for (const auto& p : posts)
+    {
+        // Para lógica de safe zone / IA, basta o poste estar "ativo".
+        // O brilho (intensity) pode piscar livremente sem abrir buracos
+        // lógicos na zona segura.
+        if (!p.active)
+            continue;
+
         float ddx = px - p.x;
         float ddz = pz - p.z;
         float d   = sqrtf(ddx * ddx + ddz * ddz);
-        if (d < minDist) minDist = d;
+        if (d < minDist)
+            minDist = d;
     }
     return minDist;
 }

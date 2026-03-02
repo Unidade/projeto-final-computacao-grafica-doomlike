@@ -126,8 +126,8 @@ void audioInit(AudioSystem& a, const Level& level) {
 
     a.engine.setDistanceModel();
 
-    // Ambient: main spooky background loop (no fallbacks)
-    // Usa a nova faixa normalizada music_ambient_mono.wav
+    // Ambient: main spooky background loop durante o gameplay
+    // Usa a faixa normalizada music_ambient_mono.wav
     a.bufAmbient = a.engine.loadWav("assets/audio/music/music_ambient_mono.wav");
 
     // Chase music
@@ -135,6 +135,9 @@ void audioInit(AudioSystem& a, const Level& level) {
 
     // Victory music (played on VITORIA screen)
     a.bufVictory = a.engine.loadWav("assets/audio/music/music_victory_mono.wav");
+
+    // Intro / menu music (menu inicial + pause + game over)
+    a.bufIntro = a.engine.loadWav("assets/audio/music/music_intro_mono.wav");
 
     // Player footsteps
     a.bufStep = a.engine.loadWav("assets/audio/sfx/sfx_step_concrete_01_mono.wav");
@@ -163,14 +166,17 @@ void audioInit(AudioSystem& a, const Level& level) {
     // Player low-health breathing
     a.bufBreath = a.engine.loadWav("assets/audio/breath_mono.wav");
 
-    // Ambient (2D loop)
+    // Ambient (2D loop) — usado apenas durante o gameplay (JOGANDO),
+    // controlado por audioUpdate + game state.
     if (a.bufAmbient) {
         a.srcAmbient = a.engine.createSource(a.bufAmbient, true);
-        alSourcei(a.srcAmbient, AL_SOURCE_RELATIVE, AL_TRUE);
-        a.engine.setSourcePos(a.srcAmbient, {0.0f, 0.0f, 0.0f});
-        a.engine.setSourceDistance(a.srcAmbient, 1.0f, 0.0f, 1000.0f);
-        a.engine.setSourceGain(a.srcAmbient, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
-        a.engine.play(a.srcAmbient);
+        if (a.srcAmbient) {
+            alSourcei(a.srcAmbient, AL_SOURCE_RELATIVE, AL_TRUE);
+            a.engine.setSourcePos(a.srcAmbient, {0.0f, 0.0f, 0.0f});
+            a.engine.setSourceDistance(a.srcAmbient, 1.0f, 0.0f, 1000.0f);
+            a.engine.setSourceGain(a.srcAmbient, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+            // Não damos play aqui: será iniciado quando o jogo estiver em JOGANDO.
+        }
     }
 
     // Chase music (2D loop, plays when enemy chasing)
@@ -192,6 +198,19 @@ void audioInit(AudioSystem& a, const Level& level) {
             a.engine.setSourcePos(a.srcVictory, {0.0f, 0.0f, 0.0f});
             a.engine.setSourceDistance(a.srcVictory, 1.0f, 0.0f, 1000.0f);
             a.engine.setSourceGain(a.srcVictory, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+        }
+    }
+
+    // Intro/menu music (2D loop) – começa tocando no menu inicial
+    if (a.bufIntro) {
+        a.srcIntro = a.engine.createSource(a.bufIntro, true);
+        if (a.srcIntro) {
+            alSourcei(a.srcIntro, AL_SOURCE_RELATIVE, AL_TRUE);
+            a.engine.setSourcePos(a.srcIntro, {0.0f, 0.0f, 0.0f});
+            a.engine.setSourceDistance(a.srcIntro, 1.0f, 0.0f, 1000.0f);
+            a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+            a.engine.play(a.srcIntro);
+            a.introPlaying = true;
         }
     }
 
@@ -364,7 +383,17 @@ void audioUpdate(
         }
         float ambGain = anyChasing ? 0.0f : (AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
         float chaseGain = anyChasing ? (AudioTuning::MASTER * AudioTuning::CHASE_GAIN) : 0.0f;
-        if (a.srcAmbient) a.engine.setSourceGain(a.srcAmbient, ambGain);
+        if (a.srcAmbient) {
+            a.engine.setSourceGain(a.srcAmbient, ambGain);
+            // Garante que a música ambiente esteja realmente tocando durante o gameplay
+            // quando deveria estar audível.
+            if (ambGain > 0.0f) {
+                ALint st = 0;
+                alGetSourcei(a.srcAmbient, AL_SOURCE_STATE, &st);
+                if (st != AL_PLAYING)
+                    a.engine.play(a.srcAmbient);
+            }
+        }
         a.engine.setSourceGain(a.srcChase, chaseGain);
 
         if (anyChasing) {

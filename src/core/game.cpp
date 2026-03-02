@@ -527,6 +527,28 @@ void gameRender()
     // --- ESTADO: MENU INICIAL ---
     if (g.state == GameState::MENU_INICIAL)
     {
+        // Música: toca trilha de menu/intro, desliga victory se estava ativa.
+        {
+            auto &a = gameAudio();
+            if (a.ok) {
+                if (a.srcVictory && a.victoryPlaying) {
+                    a.engine.stop(a.srcVictory);
+                    a.victoryPlaying = false;
+                }
+                if (a.srcAmbient) {
+                    a.engine.setSourceGain(a.srcAmbient, 0.0f);
+                }
+                if (a.srcChase) {
+                    a.engine.setSourceGain(a.srcChase, 0.0f);
+                    a.engine.stop(a.srcChase);
+                }
+                if (a.srcIntro && !a.introPlaying) {
+                    a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+                    a.engine.play(a.srcIntro);
+                    a.introPlaying = true;
+                }
+            }
+        }
         // A imagem de fundo já contém o texto de instrução;
         // aqui não desenhamos título nem subtítulo extras.
         menuRender(janelaW, janelaH, g.time, "", "", g.r);
@@ -534,6 +556,28 @@ void gameRender()
     // --- ESTADO: GAME OVER ---
     else if (g.state == GameState::GAME_OVER)
     {
+        // GAME OVER: usa mesma trilha de menu.
+        {
+            auto &a = gameAudio();
+            if (a.ok) {
+                if (a.srcVictory && a.victoryPlaying) {
+                    a.engine.stop(a.srcVictory);
+                    a.victoryPlaying = false;
+                }
+                if (a.srcAmbient) {
+                    a.engine.setSourceGain(a.srcAmbient, 0.0f);
+                }
+                if (a.srcChase) {
+                    a.engine.setSourceGain(a.srcChase, 0.0f);
+                    a.engine.stop(a.srcChase);
+                }
+                if (a.srcIntro && !a.introPlaying) {
+                    a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+                    a.engine.play(a.srcIntro);
+                    a.introPlaying = true;
+                }
+            }
+        }
         menuRenderGameOver(janelaW, janelaH, g.time, g.r);
     }
     // --- ESTADO: VITORIA ---
@@ -549,6 +593,10 @@ void gameRender()
                     // Silencia música de chase e ambiente
                     if (a.srcChase) a.engine.setSourceGain(a.srcChase, 0.0f);
                     if (a.srcAmbient) a.engine.setSourceGain(a.srcAmbient, 0.0f);
+                    if (a.srcIntro && a.introPlaying) {
+                        a.engine.stop(a.srcIntro);
+                        a.introPlaying = false;
+                    }
                     a.engine.stop(a.srcChase);
 
                     a.engine.setSourceGain(a.srcVictory, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
@@ -564,6 +612,24 @@ void gameRender()
     // --- ESTADO: PAUSADO ---
     else if (g.state == GameState::PAUSADO)
     {
+        // PAUSE: volta a tocar trilha de menu/intro, silenciando ambient/chase.
+        {
+            auto &a = gameAudio();
+            if (a.ok) {
+                if (a.srcAmbient) {
+                    a.engine.setSourceGain(a.srcAmbient, 0.0f);
+                }
+                if (a.srcChase) {
+                    a.engine.setSourceGain(a.srcChase, 0.0f);
+                    a.engine.stop(a.srcChase);
+                }
+                if (a.srcIntro && !a.introPlaying) {
+                    a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+                    a.engine.play(a.srcIntro);
+                    a.introPlaying = true;
+                }
+            }
+        }
         drawWorld3D();
         hudRenderAll(janelaW, janelaH, gHudTex, hs, true, true, true);
         pauseMenuRender(janelaW, janelaH, g.time, g.r);
@@ -579,6 +645,26 @@ void gameRender()
     // --- ESTADO: JOGANDO ---
     else
     {
+        // Durante o gameplay: garante que a trilha de menu pare e o ambiente esteja habilitado.
+        {
+            auto &a = gameAudio();
+            if (a.ok) {
+                if (a.srcIntro && a.introPlaying) {
+                    a.engine.stop(a.srcIntro);
+                    a.introPlaying = false;
+                }
+                // ambient/chase são controlados por audioUpdate; aqui só garantimos
+                // que o ambient pode voltar a ter ganho > 0 se não houver chase.
+                if (a.srcAmbient && !a.victoryPlaying) {
+                    // ganho final será ajustado pelo audioUpdate (anyChasing).
+                    // Não chamamos play aqui porque audioUpdate já garante isso.
+                }
+                if (a.srcVictory && a.victoryPlaying && g.state != GameState::VITORIA) {
+                    a.engine.stop(a.srcVictory);
+                    a.victoryPlaying = false;
+                }
+            }
+        }
         drawWorld3D();
         hudRenderAll(janelaW, janelaH, gHudTex, hs, true, true, true);
         desenhaTutorial(g.levelTime, janelaW, janelaH);

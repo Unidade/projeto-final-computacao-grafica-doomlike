@@ -8,8 +8,10 @@ const float ENEMY_SPEED = 4.8f;           // base speed (BOSS/STALKER escalam a 
 const float ENEMY_WANDER_SPEED = 1.7f;
 const float ENEMY_VIEW_DIST = 30.0f;      // base view distance (type-specific modifiers apply)
 const float ENEMY_ATTACK_DIST = 2.2f;     // hit radius mais generoso
-const float WANDER_DIR_CHANGE_MIN = 1.0f; // slightly more active wandering
-const float WANDER_DIR_CHANGE_MAX = 2.5f;
+// Inimigos vagam em uma direção "decidida" por ~3s antes de trocar,
+// evitando jitter e mudanças muito rápidas.
+const float WANDER_DIR_CHANGE_MIN = 2.5f;
+const float WANDER_DIR_CHANGE_MAX = 3.5f;
 
 enum EnemyState
 {

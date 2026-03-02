@@ -103,6 +103,10 @@ bool isWalkable(float x, float z)
     // Walls block movement
     if (c == '1' || c == '2')
         return false;
+    // Enemies should not stand exactly on light posts (P tile) to
+    // avoid getting visually "inside" the post mesh.
+    if (c == 'P')
+        return false;
 
     return true;
 }
@@ -147,8 +151,12 @@ void updateEntities(float dt)
         float nearestPostDistSq = FLT_MAX;
         for (const auto &p : lvl.posts)
         {
-            if (!p.active || p.intensity <= 0.05f)
+            // Para lógica de IA/safe zone, basta o poste estar ativo.
+            // O brilho (intensity) pode piscar livremente sem afetar
+            // quais postes contam como "mais próximos".
+            if (!p.active)
                 continue;
+
             float pdx = en.x - p.x;
             float pdz = en.z - p.z;
             float d2 = pdx * pdx + pdz * pdz;
@@ -168,14 +176,63 @@ void updateEntities(float dt)
         if (isBoss)
             canSeePlayerNow = !playerInSafeZone;
 
-        bool nearActivePost = nearestPost && (dPost < GameConfig::SAFE_ZONE_RADIUS * 0.9f);
-        bool retreatDesired = nearActivePost &&
-                              (playerInSafeZone ||
-                               (!playerVisibleToMonster && dist < GameConfig::SAFE_ZONE_RADIUS * 1.5f));
+        // Se o inimigo já está dentro de uma safe zone ativa, ele deve
+        // imediatamente evitar ficar ali (não pode caçar/atacar de dentro da luz).
+        bool enemyInSafeZone = nearestPost &&
+                               (dPost <= GameConfig::SAFE_ZONE_RADIUS);
 
-        if (retreatDesired && en.state != STATE_DEAD)
+        // "Near" inclui a própria borda da safe zone – usamos um pequeno buffer
+        // para empurrar o inimigo alguns passos para fora.
+        bool nearActivePost = nearestPost &&
+                              (dPost < GameConfig::SAFE_ZONE_RADIUS * 1.1f);
+
+        bool retreatDesired = false;
+
+        // Regra forte: se o jogador está em uma safe zone ativa:
+        // - Qualquer inimigo que esteja dentro ou muito perto da safe zone entra em RETREAT.
+        // - Inimigos em CHASE/ATTACK fora do raio voltam para IDLE (não podem continuar caçando).
+        if (playerInSafeZone)
         {
-            en.state = STATE_RETREAT;
+            if (enemyInSafeZone || nearActivePost)
+            {
+                en.state = STATE_RETREAT;
+            }
+            else if (en.state == STATE_CHASE || en.state == STATE_ATTACK)
+            {
+                en.state = STATE_IDLE;
+                en.chaseMemoryTimer = 0.0f;
+                en.wanderTimer = 0.0f;
+            }
+        }
+        else
+        {
+            // Comportamento normal de retreat quando o jogador não está claramente em safe zone.
+            if (enemyInSafeZone)
+            {
+                retreatDesired = true;
+            }
+            else if (nearActivePost)
+            {
+                if (isBoss)
+                {
+                    // BOSS só respeita safe zones de poste, não a lanterna:
+                    // ele recua quando o JOGADOR está protegido na luz.
+                    retreatDesired = playerInSafeZone;
+                }
+                else
+                {
+                    // Inimigos comuns também são "espantados" quando perdem visão
+                    // do jogador perto de um poste (ex: jogador liga a lanterna).
+                    retreatDesired = playerInSafeZone ||
+                                     (!playerVisibleToMonster &&
+                                      dist < GameConfig::SAFE_ZONE_RADIUS * 1.5f);
+                }
+            }
+
+            if (retreatDesired && en.state != STATE_DEAD)
+            {
+                en.state = STATE_RETREAT;
+            }
         }
 
         switch (en.state)
@@ -188,16 +245,54 @@ void updateEntities(float dt)
                 en.chaseMemoryTimer = getEnemyAggroMemory(en.typeEnum);
                 break;
             }
-            // Wander: pick new direction when timer expires or direction invalid
+            // Wander: pick new direction when timer expires or direction invalid.
+            // Evita ficar indo e voltando na mesma linha: novo vetor não deve ser
+            // praticamente oposto ao anterior.
             bool needNewDir = (en.wanderTimer <= 0.0f) ||
                               (en.wanderDirX == 0.0f && en.wanderDirZ == 0.0f);
             if (needNewDir)
             {
-                float angle = (float)(std::rand() % 360) * (3.14159265f / 180.0f);
-                en.wanderDirX = std::cos(angle);
-                en.wanderDirZ = std::sin(angle);
+                float prevX = en.wanderDirX;
+                float prevZ = en.wanderDirZ;
+
+                float angle = 0.0f;
+                float newX = 0.0f, newZ = 0.0f;
+                bool chosen = false;
+
+                for (int attempts = 0; attempts < 8; ++attempts)
+                {
+                    angle = (float)(std::rand() % 360) * (3.14159265f / 180.0f);
+                    newX = std::cos(angle);
+                    newZ = std::sin(angle);
+
+                    // Se não havia direção anterior, qualquer uma serve
+                    if (prevX == 0.0f && prevZ == 0.0f)
+                    {
+                        chosen = true;
+                        break;
+                    }
+
+                    float dot = newX * prevX + newZ * prevZ;
+                    // Evita escolher direção quase oposta (dot ~ -1.0)
+                    if (dot > -0.5f)
+                    {
+                        chosen = true;
+                        break;
+                    }
+                }
+
+                if (!chosen)
+                {
+                    newX = std::cos(angle);
+                    newZ = std::sin(angle);
+                }
+
+                en.wanderDirX = newX;
+                en.wanderDirZ = newZ;
+
                 float range = WANDER_DIR_CHANGE_MAX - WANDER_DIR_CHANGE_MIN;
-                en.wanderTimer = WANDER_DIR_CHANGE_MIN + (float)(std::rand() % 100) / 100.0f * range;
+                en.wanderTimer = WANDER_DIR_CHANGE_MIN +
+                                 (float)(std::rand() % 100) / 100.0f * range;
             }
             else
             {
@@ -213,13 +308,23 @@ void updateEntities(float dt)
             bool canMoveX = isWalkable(nextX, en.z) && !nextInSafeZoneX;
             bool canMoveZ = isWalkable(en.x, nextZ) && !nextInSafeZoneZ;
             if (canMoveX)
+            {
                 en.x = nextX;
+            }
             else
-                en.wanderDirX = -en.wanderDirX; // bounce off wall
+            {
+                // Em vez de ficar apenas invertendo eixo (back-and-forth),
+                // força uma nova direção no próximo frame.
+                en.wanderTimer = 0.0f;
+            }
             if (canMoveZ)
+            {
                 en.z = nextZ;
+            }
             else
-                en.wanderDirZ = -en.wanderDirZ;
+            {
+                en.wanderTimer = 0.0f;
+            }
             break;
         }
 
