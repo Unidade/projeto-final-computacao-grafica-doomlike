@@ -209,7 +209,7 @@ void updateEntities(float dt)
             {
                 item.respawnTimer = 999999.0f;
                 g.player.batteriesCollected++;
-                g.batteriesCollectedInLevel++;
+                lvl.batteriesCollectedInMap++;
                 audioPlayBatteryPickup(audio);
             }
             else if (item.type == ITEM_KEY)

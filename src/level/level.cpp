@@ -22,6 +22,9 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
     lvl.enemies.clear();
     lvl.items.clear();
     lvl.posts.clear();
+    lvl.hasDoor = false;
+    lvl.batteriesCollectedInMap = 0;
+    lvl.batteriesRequiredInMap = 0;
 
     // 2. Escaneia o mapa procurando Entidades (E, H, etc)
     // Precisamos acessar os dados brutos do MapLoader como referência mudável
@@ -99,6 +102,7 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
                 i.active = true;
                 i.respawnTimer = 0.0f;
                 lvl.items.push_back(i);
+                lvl.batteriesRequiredInMap++;
             }
             else if (c == 'Y') // Chave do nivel (Luzes Apagadas)
             {
