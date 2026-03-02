@@ -54,6 +54,16 @@ AudioSystem &gameAudio() { return gAudioSys; }
 
 Level &gameLevel() { return gLevel; }
 
+static int countBatteriesInLevel(const Level &lvl)
+{
+    int count = 0;
+    for (const auto &item : lvl.items)
+    {
+        if (item.type == ITEM_BATTERY) count++;
+    }
+    return count;
+}
+
 GameState gameGetState() { return g.state; }
 
 void gameSetState(GameState s) { g.state = s; }
@@ -159,7 +169,7 @@ bool gameInit(const char *mapPath)
     g.weapon = WeaponAnim{};
     g.flashlightOn = true;
     g.batteriesCollectedInLevel = 0;
-    g.batteriesRequiredInLevel = GameConfig::BATTERIES_REQUIRED;
+    g.batteriesRequiredInLevel = countBatteriesInLevel(gLevel);
 
     return true;
 }
@@ -175,7 +185,7 @@ void gameReset()
     g.player.darknessDamageTimer= 0.0f;
     g.player.batteriesCollected = 0;
     g.batteriesCollectedInLevel = 0;
-    g.batteriesRequiredInLevel = GameConfig::BATTERIES_REQUIRED;
+    g.batteriesRequiredInLevel = countBatteriesInLevel(gLevel);
     for (int i = 0; i < 4; i++) g.player.hasLevelKey[i] = false;
 
     g.weapon.state = WeaponState::W_IDLE;
@@ -304,7 +314,7 @@ void gameUpdate(float dt)
                     g.lightSystem.cycleCount = 0;
                     g.levelTime = 0.0f; // reinicia tutorial no novo nivel
                     g.batteriesCollectedInLevel = 0;
-                    g.batteriesRequiredInLevel = GameConfig::BATTERIES_REQUIRED;
+                    g.batteriesRequiredInLevel = countBatteriesInLevel(gLevel);
                     audioInit(gAudioSys, gLevel);
                 }
             }
