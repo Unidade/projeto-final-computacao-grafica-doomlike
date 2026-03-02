@@ -5,6 +5,7 @@
 #include "core/light_system.h"
 #include "audio/audio_system.h"
 #include <cmath>
+#include <cstdlib>
 
 bool isWalkable(float x, float z)
 {
@@ -77,13 +78,41 @@ void updateEntities(float dt)
         switch (en.state)
         {
         case STATE_IDLE:
-            if (playerVisibleToMonster && dist < ENEMY_VIEW_DIST) en.state = STATE_CHASE;
+        {
+            if (playerVisibleToMonster && dist < ENEMY_VIEW_DIST)
+            {
+                en.state = STATE_CHASE;
+                break;
+            }
+            // Wander randomly for spookiness — enemies drift around the map
+            en.wanderTimer -= dt;
+            if (en.wanderTimer <= 0.0f)
+            {
+                float angle = (float)(std::rand() % 360) * (3.14159265f / 180.0f);
+                en.wanderDirX = std::cos(angle);
+                en.wanderDirZ = std::sin(angle);
+                float range = WANDER_DIR_CHANGE_MAX - WANDER_DIR_CHANGE_MIN;
+                en.wanderTimer = WANDER_DIR_CHANGE_MIN + (float)(std::rand() % 100) / 100.0f * range;
+            }
+            float moveStep = ENEMY_WANDER_SPEED * dt;
+            float nextX = en.x + en.wanderDirX * moveStep;
+            float nextZ = en.z + en.wanderDirZ * moveStep;
+            bool nextInSafeZoneX = isPositionInSafeZone(
+                lvl.posts, nextX, en.z, GameConfig::SAFE_ZONE_RADIUS);
+            bool nextInSafeZoneZ = isPositionInSafeZone(
+                lvl.posts, en.x, nextZ, GameConfig::SAFE_ZONE_RADIUS);
+            if (isWalkable(nextX, en.z) && !nextInSafeZoneX) en.x = nextX;
+            else en.wanderTimer = 0.0f; // hit wall, pick new dir next frame
+            if (isWalkable(en.x, nextZ) && !nextInSafeZoneZ) en.z = nextZ;
+            else en.wanderTimer = 0.0f;
             break;
+        }
 
         case STATE_CHASE:
             if (!playerVisibleToMonster)
             {
                 en.state = STATE_IDLE; // Player entered light — monster loses track
+                en.wanderTimer = 0.0f; // pick new wander dir immediately
             }
             else if (dist < ENEMY_ATTACK_DIST)
             {
@@ -93,6 +122,7 @@ void updateEntities(float dt)
             else if (dist > ENEMY_VIEW_DIST * 1.5f)
             {
                 en.state = STATE_IDLE;
+                en.wanderTimer = 0.0f;
             }
             else
             {
@@ -119,6 +149,7 @@ void updateEntities(float dt)
             if (!playerVisibleToMonster)
             {
                 en.state = STATE_IDLE; // Player entered light — can't attack
+                en.wanderTimer = 0.0f;
             }
             else if (dist > ENEMY_ATTACK_DIST)
             {

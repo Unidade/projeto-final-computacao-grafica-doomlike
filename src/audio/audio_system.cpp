@@ -169,6 +169,17 @@ void audioInit(AudioSystem& a, const Level& level) {
         a.engine.play(a.srcAmbient);
     }
 
+    // Chase music (2D loop, plays when enemy chasing)
+    if (a.bufChase) {
+        a.srcChase = a.engine.createSource(a.bufChase, true);
+        if (a.srcChase) {
+            alSourcei(a.srcChase, AL_SOURCE_RELATIVE, AL_TRUE);
+            a.engine.setSourcePos(a.srcChase, {0.0f, 0.0f, 0.0f});
+            a.engine.setSourceDistance(a.srcChase, 1.0f, 0.0f, 1000.0f);
+            a.engine.setSourceGain(a.srcChase, 0.0f);
+        }
+    }
+
     // Step (2D loop, controlado no update)
     if (a.bufStep) {
         a.srcStep = a.engine.createSource(a.bufStep, true);
@@ -318,6 +329,32 @@ void audioUpdate(
         }
 
         a.enemyPrevState[i] = (int)en.state;
+    }
+
+    // Chase music: when player enters chase radius (enemy chasing/attacking), switch to chase
+    bool anyChasing = false;
+    if (a.srcChase && a.bufChase) {
+        for (size_t i = 0; i < level.enemies.size(); ++i) {
+            const auto& en = level.enemies[i];
+            if (en.state != STATE_DEAD && (en.state == STATE_CHASE || en.state == STATE_ATTACK)) {
+                float dx = en.x - listener.pos.x;
+                float dz = en.z - listener.pos.z;
+                float dist = std::sqrt(dx * dx + dz * dz);
+                if (dist <= ENEMY_VIEW_DIST) {
+                    anyChasing = true;
+                    break;
+                }
+            }
+        }
+        float ambGain = anyChasing ? 0.0f : (AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+        float chaseGain = anyChasing ? (AudioTuning::MASTER * AudioTuning::CHASE_GAIN) : 0.0f;
+        if (a.srcAmbient) a.engine.setSourceGain(a.srcAmbient, ambGain);
+        a.engine.setSourceGain(a.srcChase, chaseGain);
+        if (anyChasing) {
+            a.engine.play(a.srcChase);
+        } else {
+            a.engine.stop(a.srcChase);
+        }
     }
 
     // screams

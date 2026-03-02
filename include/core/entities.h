@@ -5,8 +5,11 @@ void updateEntities(float dt);
 
 // Configurações da IA
 const float ENEMY_SPEED = 2.5f;
+const float ENEMY_WANDER_SPEED = 1.0f;
 const float ENEMY_VIEW_DIST = 15.0f;
 const float ENEMY_ATTACK_DIST = 1.5f;
+const float WANDER_DIR_CHANGE_MIN = 2.0f;
+const float WANDER_DIR_CHANGE_MAX = 5.0f;
 
 enum EnemyState
 {
@@ -37,6 +40,11 @@ struct Enemy
 
     // Flag para inimigo 3D avatar (GLB) - todos os inimigos são avatars
     bool isAvatar;
+
+    // Wandering: random movement when idle
+    float wanderDirX = 0.0f;
+    float wanderDirZ = 0.0f;
+    float wanderTimer = 0.0f;
 };
 
 enum ItemType
