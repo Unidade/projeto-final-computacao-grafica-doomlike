@@ -23,10 +23,6 @@ struct Level
 
     // Current level (1-3)
     int currentLevel = 1;
-
-    // Progresso de baterias no mapa atual
-    int batteriesCollectedInMap = 0;
-    int batteriesRequiredInMap = 0;
 };
 
 bool loadLevel(Level &lvl, const char *mapPath, float tileSize);
