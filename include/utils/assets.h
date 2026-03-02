@@ -36,6 +36,7 @@ struct GameAssets
     // shaders
     GLuint progSangue = 0;
     GLuint progLava = 0;
+    GLuint progLightFloor = 0; // spotlight no chão (per-fragment)
 
     GLuint texSkydome = 0;
 };

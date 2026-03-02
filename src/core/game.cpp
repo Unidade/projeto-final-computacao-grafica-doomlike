@@ -133,8 +133,9 @@ bool gameInit(const char *mapPath)
     g.r.texHealth = gAssets.texHealth;
     g.r.texAmmo = gAssets.texAmmo;
 
-    g.r.progSangue = gAssets.progSangue;
-    g.r.progLava = gAssets.progLava;
+    g.r.progSangue    = gAssets.progSangue;
+    g.r.progLava      = gAssets.progLava;
+    g.r.progLightFloor= gAssets.progLightFloor;
 
     if (!loadLevel(gLevel, mapPath, GameConfig::TILE_SIZE))
         return false;
@@ -307,6 +308,31 @@ void drawWorld3D()
     }
 
     drawSkydome(camX, camY, camZ, g.r);
+
+    // Alimenta o shader de ch\u00e3o com dados do poste ativo mais pr\u00f3ximo
+    {
+        static const float CONE_DEG = 55.0f; // deve coincidir com GL_SPOT_CUTOFF e drawLightPosts
+        static const float PI = 3.14159265f;
+
+        float bestDist = FLT_MAX;
+        const LightPost* best = nullptr;
+        for (const auto& p : gLevel.posts) {
+            if (!p.active || p.intensity < 0.05f) continue;
+            float ddx = camX - p.x, ddz = camZ - p.z;
+            float d = sqrtf(ddx*ddx + ddz*ddz);
+            if (d < bestDist) { bestDist = d; best = &p; }
+        }
+
+        if (best) {
+            float coneRadius = tanf(CONE_DEG * PI / 180.0f) * 3.75f; // CEILING_H=3.8
+            setFloorLightShader(g.r.progLightFloor,
+                                best->x, best->z,
+                                coneRadius, best->intensity);
+        } else {
+            setFloorLightShader(0, 0, 0, 0, 0); // desliga o shader
+        }
+    }
+
     drawLevel(gLevel.map, camX, camZ, dirX, dirZ, g.r, g.time);
     drawEntities(gLevel.enemies, gLevel.items, camX, camZ, dirX, dirZ, g.r);
     drawLightPosts(gLevel.posts, camX, camZ, dirX, dirZ);

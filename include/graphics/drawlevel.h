@@ -18,6 +18,8 @@ void drawEntities(const std::vector<Enemy> &enemies,
 void drawLightPosts(const std::vector<LightPost>& posts,
                     float camX, float camZ, float dx, float dz);
 
+void setFloorLightShader(GLuint prog, float lx, float lz, float radius, float intensity);
+
 void setPostLightEachFrame(float postX, float postZ, float intensity, bool enabled);
 
 #endif

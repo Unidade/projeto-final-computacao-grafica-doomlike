@@ -16,7 +16,8 @@ bool loadAssets(GameAssets &a)
     a.texTeto = carregaTextura("assets/082.png");
 
     a.progSangue = criaShader("shaders/blood.vert", "shaders/blood.frag");
-    a.progLava = criaShader("shaders/lava.vert", "shaders/lava.frag");
+    a.progLava   = criaShader("shaders/lava.vert",  "shaders/lava.frag");
+    a.progLightFloor = criaShader("shaders/lightpost.vert", "shaders/lightpost.frag");
 
     // --- INIMIGO 0 ('J') ---
     a.texEnemies[0] = carregaTextura("assets/enemies/enemy.png");

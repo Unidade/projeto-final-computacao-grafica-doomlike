@@ -13,7 +13,7 @@
 
 // Config do grid
 static const float TILE = 4.0f;      // tamanho do tile no mundo
-static const float CEILING_H = 2.8f; // teto mais baixo para spotlight mais compacto
+static const float CEILING_H = 3.8f; // teto mais alto
 static const float WALL_H = 4.0f;    // altura da parede
 static const float EPS_Y = 0.001f;   // evita z-fighting
 
@@ -23,9 +23,27 @@ static const GLfloat kAmbientIndoor[] = {0.02f, 0.02f, 0.03f, 1.0f};  // interio
 // ======================
 // CONFIG ÚNICA DO CULLING (XZ)
 // ======================
-static float gCullHFovDeg = 170.0f;     // FOV horizontal do culling (cenário + entidades)
-static float gCullNearTiles = 2.0f;     // dentro disso não faz culling angular
-static float gCullMaxDistTiles = 20.0f; // 0 = sem limite; em tiles
+static float gCullHFovDeg = 170.0f;
+static float gCullNearTiles = 2.0f;
+static float gCullMaxDistTiles = 20.0f;
+
+// ---------------------------------------------------------------------------
+// Shader de chão com iluminação per-fragment — alimentado por setFloorLightShader()
+// ---------------------------------------------------------------------------
+static GLuint gProgLightFloor = 0;
+static float  gFloorLightX    = 0.0f; // posição world X do poste mais próximo
+static float  gFloorLightZ    = 0.0f; // posição world Z
+static float  gConeRadius     = 0.0f; // raio do cone no chão
+static float  gLightIntensity = 0.0f; // intensidade atual (0-1)
+
+void setFloorLightShader(GLuint prog, float lx, float lz, float radius, float intensity)
+{
+    gProgLightFloor = prog;
+    gFloorLightX    = lx;
+    gFloorLightZ    = lz;
+    gConeRadius     = radius;
+    gLightIntensity = intensity;
+}
 
 // Retorna TRUE se deve renderizar o objeto no plano XZ (distância + cone de FOV)
 // - Usa as configs globais gCull*
@@ -198,14 +216,29 @@ static void desenhaQuadChao(float x, float z, float tile, float tilesUV)
 
 static void desenhaTileChao(float x, float z, GLuint texChaoX, bool temTeto)
 {
-    glUseProgram(0);
-    glColor3f(1, 1, 1);
+    // Usa o shader de luz per-fragment se disponível
+    if (gProgLightFloor && gConeRadius > 0.0f)
+    {
+        glUseProgram(gProgLightFloor);
+        glUniform2f(glGetUniformLocation(gProgLightFloor, "uLightPos"),
+                    gFloorLightX, gFloorLightZ);
+        glUniform1f(glGetUniformLocation(gProgLightFloor, "uConeRadius"), gConeRadius);
+        glUniform1f(glGetUniformLocation(gProgLightFloor, "uIntensity"),  gLightIntensity);
+        glUniform1i(glGetUniformLocation(gProgLightFloor, "uTexture"), 0);
+    }
+    else
+    {
+        glUseProgram(0);
+    }
 
+    glColor3f(1, 1, 1);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texChaoX);
 
     desenhaQuadChao(x, z, TILE, 2.0f);
 
+    // Teto sempre sem shader (preto puro)
+    glUseProgram(0);
     desenhaQuadTeto(x, z, TILE, 2.0f);
 }
 
@@ -595,32 +628,63 @@ void drawLightPosts(const std::vector<LightPost>& posts,
         if (p.active && p.intensity > 0.05f)
         {
             glEnable(GL_BLEND);
+            glDepthMask(GL_FALSE);
+
+            float alpha = 0.13f * p.intensity;
+            float apex  = CEILING_H - 0.15f;
+
+            // -- Cone lateral (do teto ao chão) --
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-            glDepthMask(GL_FALSE); // não escreve no z-buffer (transparente)
-
-            float alpha = 0.10f * p.intensity; // levemente visível
-            float apex  = CEILING_H - 0.15f;   // topo na lâmpada
-
-            // Faces laterais: TRIANGLE_FAN do ápice para a borda do círculo base
             glBegin(GL_TRIANGLE_FAN);
-            // Ápice (lâmpada)
-            glColor4f(1.0f, 0.96f, 0.65f, alpha * 2.0f);
+            glColor4f(1.0f, 0.96f, 0.65f, alpha * 2.2f); // ápice mais brilhante
             glVertex3f(0.0f, apex, 0.0f);
-            // Borda do círculo no chão
             for (int i = 0; i <= CONE_SEGS; i++)
             {
                 float ang = i * 2.0f * PI / CONE_SEGS;
                 float bx  = cosf(ang) * coneRad;
                 float bz  = sinf(ang) * coneRad;
-                // Borda mais transparente que o ápice
-                glColor4f(1.0f, 0.95f, 0.5f, 0.0f);
-                glVertex3f(bx, 0.02f, bz); // ligeiramente acima do chão
+                glColor4f(1.0f, 0.95f, 0.5f, 0.0f); // borda totalmente transparente
+                glVertex3f(bx, 0.02f, bz);
             }
             glEnd();
+
+            // -- Disco no chão: blending ADITIVO para parecer luz real --
+            // Brilhante no centro, fadeout até o raio exato do cone
+            glBlendFunc(GL_ONE, GL_ONE); // aditivo: soma luminosidade
+            glBegin(GL_TRIANGLE_FAN);
+            // Centro: amarelo-branco quente
+            glColor4f(0.55f * p.intensity, 0.50f * p.intensity, 0.20f * p.intensity, 1.0f);
+            glVertex3f(0.0f, 0.01f, 0.0f);
+            for (int i = 0; i <= CONE_SEGS; i++)
+            {
+                float ang = i * 2.0f * PI / CONE_SEGS;
+                float bx  = cosf(ang) * coneRad;
+                float bz  = sinf(ang) * coneRad;
+                glColor4f(0.0f, 0.0f, 0.0f, 1.0f); // borda: nenhuma contribuição
+                glVertex3f(bx, 0.01f, bz);
+            }
+            glEnd();
+
+            // -- Anel (circunferência) na borda do cone no chão --
+            // Marca visualmente o limite exato da zona iluminada
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glLineWidth(2.0f);
+            glBegin(GL_LINE_LOOP);
+            for (int i = 0; i < CONE_SEGS; i++)
+            {
+                float ang = i * 2.0f * PI / CONE_SEGS;
+                float bx  = cosf(ang) * coneRad;
+                float bz  = sinf(ang) * coneRad;
+                glColor4f(0.9f, 0.85f, 0.4f, 0.55f * p.intensity); // anel dourado
+                glVertex3f(bx, 0.015f, bz);
+            }
+            glEnd();
+            glLineWidth(1.0f);
 
             glDepthMask(GL_TRUE);
             glDisable(GL_BLEND);
         }
+
 
         // -------- PILAR: do chão até o teto --------
         float pillarH = CEILING_H - 0.05f;

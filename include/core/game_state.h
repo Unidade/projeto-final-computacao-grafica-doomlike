@@ -41,6 +41,7 @@ struct RenderAssets
 
     GLuint progSangue = 0;
     GLuint progLava = 0;
+    GLuint progLightFloor = 0;
 };
 
 struct GameContext
