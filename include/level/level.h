@@ -24,9 +24,9 @@ struct Level
     // Current level (1-3)
     int currentLevel = 1;
 
-    // Objetivo local da fase atual
-    int batteriesRequiredInMap = 0;
+    // Progresso de baterias no mapa atual
     int batteriesCollectedInMap = 0;
+    int batteriesRequiredInMap = 0;
 };
 
 bool loadLevel(Level &lvl, const char *mapPath, float tileSize);
