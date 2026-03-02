@@ -13,24 +13,24 @@ namespace AudioTuning
     // 0.8f = um pouco mais alto
     // 1.0f = padrão “cheio"
     // 1.2f / 1.5f = bem alto (cuidado pra não estourar)
-    static constexpr float AMBIENT_GAIN = 0.30f;
-    static constexpr float CHASE_GAIN = 0.35f;
-    static constexpr float STEP_GAIN = 0.55f;
-    static constexpr float PUMP_GAIN = 0.85f; // door locked / battery pickup
-    static constexpr float DAMAGE_GAIN = 1.00f;
+    static constexpr float AMBIENT_GAIN = 0.42f; // levemente mais alto para música ambiente
+    static constexpr float CHASE_GAIN = 0.33f;
+    static constexpr float STEP_GAIN = 0.48f;
+    static constexpr float PUMP_GAIN = 0.78f; // door locked / battery pickup
+    static constexpr float DAMAGE_GAIN = 0.92f;
 
     // Respiração (low HP)
     static constexpr int LOW_HP_THRESHOLD = 40; // vida abaixo disso ativa respiração
     static constexpr float BREATH_GAIN = 0.95f;
 
     // ===== Monster SFX (3D) =====
-    static constexpr float MONSTER_CHASE_GAIN = 1.10f;
-    static constexpr float MONSTER_IDLE_GAIN  = 0.65f;
-    static constexpr float MONSTER_ATTACK_GAIN = 1.25f;
-    static constexpr float MONSTER_SPOT_GAIN   = 1.35f;
+    static constexpr float MONSTER_CHASE_GAIN = 1.00f;
+    static constexpr float MONSTER_IDLE_GAIN  = 0.58f;
+    static constexpr float MONSTER_ATTACK_GAIN = 1.10f;
+    static constexpr float MONSTER_SPOT_GAIN   = 1.20f;
 
     // ===== Inimigos 3D (loop base) =====
-    static constexpr float ENEMY_BASE_GAIN = 0.75f; // ganho base do loop do inimigo
+    static constexpr float ENEMY_BASE_GAIN = 0.68f; // ganho base do loop do inimigo
 
     // Atenuação (quanto dá pra ouvir e quão rápido cai)
     // refDist: até aqui fica "normal"
@@ -45,7 +45,7 @@ namespace AudioTuning
     static constexpr float ENEMY_STOP_DIST = 8.50f;
 
     // ===== Grito aleatório do inimigo (3D) =====
-    static constexpr float ENEMY_SCREAM_GAIN = 1.40f;         // volume do grito
+    static constexpr float ENEMY_SCREAM_GAIN = 1.25f;         // volume do grito
     static constexpr float ENEMY_SCREAM_MIN_INTERVAL = 6.0f;  // mínimo entre gritos (s)
     static constexpr float ENEMY_SCREAM_MAX_INTERVAL = 14.0f; // máximo entre gritos (s)
 
@@ -56,5 +56,5 @@ namespace AudioTuning
     static constexpr float SCREAM_MAX_AUDIBLE_DIST = 20.0f;
 
     // ===== Som de kill (quando inimigo morre) =====
-    static constexpr float KILL_GAIN = 1.00f;
+    static constexpr float KILL_GAIN = 0.90f;
 }

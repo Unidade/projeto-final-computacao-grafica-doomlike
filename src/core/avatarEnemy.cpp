@@ -214,7 +214,7 @@ namespace AvatarSystem
         glDisable(GL_CULL_FACE);
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         glLineWidth(1.5f);
-        glColor3f(0.02f, 0.02f, 0.02f);
+        glColor3f(0.3f, 0.3f, 0.3f);
         glPushMatrix();
         glScalef(1.02f, 1.02f, 1.02f);
         glDrawElements(GL_TRIANGLES, m.index_count,

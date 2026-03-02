@@ -6,7 +6,7 @@ void updateEntities(float dt);
 // Configurações da IA
 const float ENEMY_SPEED = 4.8f;           // base speed (BOSS/STALKER escalam a partir daqui)
 const float ENEMY_WANDER_SPEED = 1.7f;
-const float ENEMY_VIEW_DIST = 24.0f;      // base view distance (type-specific modifiers apply)
+const float ENEMY_VIEW_DIST = 30.0f;      // base view distance (type-specific modifiers apply)
 const float ENEMY_ATTACK_DIST = 2.2f;     // hit radius mais generoso
 const float WANDER_DIR_CHANGE_MIN = 1.0f; // slightly more active wandering
 const float WANDER_DIR_CHANGE_MAX = 2.5f;
