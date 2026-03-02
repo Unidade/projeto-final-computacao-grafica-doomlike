@@ -14,6 +14,7 @@ namespace AudioTuning
     // 1.0f = padrão “cheio"
     // 1.2f / 1.5f = bem alto (cuidado pra não estourar)
     static constexpr float AMBIENT_GAIN = 0.30f;
+    static constexpr float CHASE_GAIN = 0.35f;
     static constexpr float STEP_GAIN = 0.55f;
     static constexpr float PUMP_GAIN = 0.85f; // door locked / battery pickup
     static constexpr float DAMAGE_GAIN = 1.00f;

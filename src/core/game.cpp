@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <cfloat>
 
 #include "core/game_enums.h"
@@ -96,6 +97,8 @@ bool gameInit(const char *mapPath)
     glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.0f);
     glDisable(GL_LIGHT3);
 
+    std::srand((unsigned)std::time(nullptr));
+
     if (!loadAssets(gAssets))
         return false;
 
@@ -151,6 +154,7 @@ bool gameInit(const char *mapPath)
 
     g.state = GameState::MENU_INICIAL;
     g.time = 0.0f;
+    g.levelTime = 0.0f;
     g.player = PlayerState{};
     g.weapon = WeaponAnim{};
     g.flashlightOn = true;
@@ -173,6 +177,7 @@ void gameReset()
     g.weapon.state = WeaponState::W_IDLE;
     g.weapon.timer = 0.0f;
     g.flashlightOn = true;
+    g.levelTime = 0.0f;
 
     g.lightSystem.stateA = LightCycleState::ON;
     g.lightSystem.stateB = LightCycleState::OFF;
@@ -196,6 +201,8 @@ void gameUpdate(float dt)
     {
         return;
     }
+
+    g.levelTime += dt; // avanca apenas enquanto JOGANDO
 
     atualizaMovimento();
 
@@ -257,7 +264,7 @@ void gameUpdate(float dt)
         float ddz = camZ - gLevel.doorZ;
         if (ddx * ddx + ddz * ddz < 4.0f) // within 2 units of door
         {
-            bool hasBatteries = (g.player.batteriesCollected >= GameConfig::BATTERIES_REQUIRED);
+            bool hasBatteries = (gLevel.batteriesCollectedInMap >= gLevel.batteriesRequiredInMap);
             int cl = gLevel.currentLevel;
             bool hasKey = (cl >= 1 && cl <= 3 && g.player.hasLevelKey[cl]);
 
@@ -291,6 +298,7 @@ void gameUpdate(float dt)
                     g.lightSystem.stateB = LightCycleState::OFF;
                     g.lightSystem.timer = 0.0f;
                     g.lightSystem.cycleCount = 0;
+                    g.levelTime = 0.0f; // reinicia tutorial no novo nivel
                     audioInit(gAudioSys, gLevel);
                 }
             }
@@ -374,8 +382,8 @@ void gameRender()
     // Monta o estado do HUD a partir das variáveis globais do jogo
     HudState hs;
     hs.playerHealth = g.player.health;
-    hs.batteriesCollected = g.player.batteriesCollected;
-    hs.batteriesRequired = GameConfig::BATTERIES_REQUIRED;
+    hs.batteriesCollected = gLevel.batteriesCollectedInMap;
+    hs.batteriesRequired = gLevel.batteriesRequiredInMap;
     int cl = gLevel.currentLevel;
     hs.currentLevel = cl;
     hs.hasLevelKey = (cl >= 1 && cl <= 3) && g.player.hasLevelKey[cl];
@@ -411,6 +419,7 @@ void gameRender()
     {
         drawWorld3D();
         hudRenderAll(janelaW, janelaH, gHudTex, hs, true, true, true);
+        desenhaTutorial(g.levelTime, janelaW, janelaH);
         menuMeltRenderOverlay(janelaW, janelaH, g.time);
     }
 

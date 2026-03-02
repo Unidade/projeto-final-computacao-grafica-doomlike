@@ -5,6 +5,8 @@
 #include "core/light_system.h"
 #include "audio/audio_system.h"
 #include <cmath>
+#include <cstdlib>
+#include <ctime>
 
 bool isWalkable(float x, float z)
 {
@@ -46,6 +48,7 @@ void updateEntities(float dt)
                 en.x = en.startX;
                 en.z = en.startZ;
                 en.hurtTimer = 0.0f;
+                en.wanderTimer = 0.0f;  // pick fresh wander dir
             }
             continue;
         }
@@ -77,13 +80,48 @@ void updateEntities(float dt)
         switch (en.state)
         {
         case STATE_IDLE:
-            if (playerVisibleToMonster && dist < ENEMY_VIEW_DIST) en.state = STATE_CHASE;
+        {
+            if (playerVisibleToMonster && dist < ENEMY_VIEW_DIST)
+            {
+                en.state = STATE_CHASE;
+                break;
+            }
+            // Wander: pick new direction when timer expires or direction invalid
+            bool needNewDir = (en.wanderTimer <= 0.0f) ||
+                             (en.wanderDirX == 0.0f && en.wanderDirZ == 0.0f);
+            if (needNewDir)
+            {
+                float angle = (float)(std::rand() % 360) * (3.14159265f / 180.0f);
+                en.wanderDirX = std::cos(angle);
+                en.wanderDirZ = std::sin(angle);
+                float range = WANDER_DIR_CHANGE_MAX - WANDER_DIR_CHANGE_MIN;
+                en.wanderTimer = WANDER_DIR_CHANGE_MIN + (float)(std::rand() % 100) / 100.0f * range;
+            }
+            else
+            {
+                en.wanderTimer -= dt;
+            }
+            float moveStep = ENEMY_WANDER_SPEED * dt;
+            float nextX = en.x + en.wanderDirX * moveStep;
+            float nextZ = en.z + en.wanderDirZ * moveStep;
+            bool nextInSafeZoneX = isPositionInSafeZone(
+                lvl.posts, nextX, en.z, GameConfig::SAFE_ZONE_RADIUS);
+            bool nextInSafeZoneZ = isPositionInSafeZone(
+                lvl.posts, en.x, nextZ, GameConfig::SAFE_ZONE_RADIUS);
+            bool canMoveX = isWalkable(nextX, en.z) && !nextInSafeZoneX;
+            bool canMoveZ = isWalkable(en.x, nextZ) && !nextInSafeZoneZ;
+            if (canMoveX) en.x = nextX;
+            else en.wanderDirX = -en.wanderDirX;  // bounce off wall
+            if (canMoveZ) en.z = nextZ;
+            else en.wanderDirZ = -en.wanderDirZ;
             break;
+        }
 
         case STATE_CHASE:
             if (!playerVisibleToMonster)
             {
                 en.state = STATE_IDLE; // Player entered light — monster loses track
+                en.wanderTimer = 0.0f; // pick new wander dir immediately
             }
             else if (dist < ENEMY_ATTACK_DIST)
             {
@@ -93,6 +131,7 @@ void updateEntities(float dt)
             else if (dist > ENEMY_VIEW_DIST * 1.5f)
             {
                 en.state = STATE_IDLE;
+                en.wanderTimer = 0.0f;
             }
             else
             {
@@ -119,6 +158,7 @@ void updateEntities(float dt)
             if (!playerVisibleToMonster)
             {
                 en.state = STATE_IDLE; // Player entered light — can't attack
+                en.wanderTimer = 0.0f;
             }
             else if (dist > ENEMY_ATTACK_DIST)
             {
@@ -169,6 +209,7 @@ void updateEntities(float dt)
             {
                 item.respawnTimer = 999999.0f;
                 g.player.batteriesCollected++;
+                lvl.batteriesCollectedInMap++;
                 audioPlayBatteryPickup(audio);
             }
             else if (item.type == ITEM_KEY)

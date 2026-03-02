@@ -18,10 +18,21 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
 
     lvl.metrics = LevelMetrics::fromMap(lvl.map, tileSize);
     
-    // Limpa entidades antigas se houver
+    // Limpa entidades antigas e estado local do mapa se houver
     lvl.enemies.clear();
     lvl.items.clear();
     lvl.posts.clear();
+    lvl.hasDoor = false;
+    lvl.doorX = 0.0f;
+    lvl.doorZ = 0.0f;
+    lvl.batteriesRequiredInMap = 0;
+    lvl.batteriesCollectedInMap = 0;
+
+    lvl.hasDoor = false;
+    lvl.doorX = 0.0f;
+    lvl.doorZ = 0.0f;
+    lvl.batteriesRequiredInMap = 0;
+    lvl.batteriesCollectedInMap = 0;
 
     // 2. Escaneia o mapa procurando Entidades (E, H, etc)
     // Precisamos acessar os dados brutos do MapLoader como referência mudável
@@ -92,6 +103,7 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
             }
             else if (c == 'V') // Bateria (Luzes Apagadas)
             {
+                lvl.batteriesRequiredInMap++;
                 Item i;
                 i.x = wx;
                 i.z = wz;
@@ -99,6 +111,7 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
                 i.active = true;
                 i.respawnTimer = 0.0f;
                 lvl.items.push_back(i);
+                lvl.batteriesRequiredInMap++;
             }
             else if (c == 'Y') // Chave do nivel (Luzes Apagadas)
             {
@@ -113,12 +126,28 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
             }
             else if (c == 'P') // Poste de Luz
             {
-                LightPost lp;
-                lp.x = wx;
-                lp.z = wz;
-                lp.active    = true;
-                lp.intensity = 1.0f;
-                lvl.posts.push_back(lp);
+                float dx, dz, distSq;
+                bool tooClose = false;
+                for (const auto& p : lvl.posts)
+                {
+                    dx = wx - p.x;
+                    dz = wz - p.z;
+                    distSq = dx * dx + dz * dz;
+                    if (distSq < GameConfig::MIN_POST_DISTANCE * GameConfig::MIN_POST_DISTANCE)
+                    {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                if (!tooClose)
+                {
+                    LightPost lp;
+                    lp.x = wx;
+                    lp.z = wz;
+                    lp.active    = true;
+                    lp.intensity = 1.0f;
+                    lvl.posts.push_back(lp);
+                }
             }
             else if (c == 'D') // Exit Door
             {
