@@ -12,8 +12,8 @@
 // =====================
 
 // Config do grid
-static const float TILE = 4.0f;      // tamanho do tile no mundo (ajuste)
-static const float CEILING_H = 4.0f; // altura do teto
+static const float TILE = 4.0f;      // tamanho do tile no mundo
+static const float CEILING_H = 2.8f; // teto mais baixo para spotlight mais compacto
 static const float WALL_H = 4.0f;    // altura da parede
 static const float EPS_Y = 0.001f;   // evita z-fighting
 
@@ -160,22 +160,40 @@ static void desenhaQuadTeto(float x, float z, float tile, float tilesUV)
     glColor3f(1.0f, 1.0f, 1.0f);
 }
 
+// Desenha o chão subdividido em NxN para que o per-vertex lighting
+// mostre spotlights com borda nítida. Sem subdivisão, apenas 4 vértices
+// por tile tornam qualquer spotlight invisível.
 static void desenhaQuadChao(float x, float z, float tile, float tilesUV)
 {
-    float half = tile * 0.5f;
+    const int N = 8;             // subdivisões por lado (81 vértices por tile)
+    float half  = tile * 0.5f;
+    float step  = tile / N;
+    float uvStp = tilesUV / N;
 
-    glBegin(GL_QUADS);
     glNormal3f(0.0f, 1.0f, 0.0f);
 
-    glTexCoord2f(0.0f, 0.0f);
-    glVertex3f(x - half, EPS_Y, z + half);
-    glTexCoord2f(tilesUV, 0.0f);
-    glVertex3f(x + half, EPS_Y, z + half);
-    glTexCoord2f(tilesUV, tilesUV);
-    glVertex3f(x + half, EPS_Y, z - half);
-    glTexCoord2f(0.0f, tilesUV);
-    glVertex3f(x - half, EPS_Y, z - half);
-    glEnd();
+    for (int zi = 0; zi < N; zi++)
+    {
+        for (int xi = 0; xi < N; xi++)
+        {
+            float x0 = (x - half) + xi       * step;
+            float x1 = (x - half) + (xi + 1) * step;
+            float z0 = (z - half) + zi       * step;
+            float z1 = (z - half) + (zi + 1) * step;
+
+            float u0 = xi       * uvStp;
+            float u1 = (xi + 1) * uvStp;
+            float v0 = zi       * uvStp;
+            float v1 = (zi + 1) * uvStp;
+
+            glBegin(GL_QUADS);
+            glTexCoord2f(u0, v1);  glVertex3f(x0, EPS_Y, z1);
+            glTexCoord2f(u1, v1);  glVertex3f(x1, EPS_Y, z1);
+            glTexCoord2f(u1, v0);  glVertex3f(x1, EPS_Y, z0);
+            glTexCoord2f(u0, v0);  glVertex3f(x0, EPS_Y, z0);
+            glEnd();
+        }
+    }
 }
 
 static void desenhaTileChao(float x, float z, GLuint texChaoX, bool temTeto)
@@ -557,6 +575,13 @@ void drawLightPosts(const std::vector<LightPost>& posts,
     bool hasFwd = getForwardXZ(dx, dz, fwdx, fwdz);
 
     glDisable(GL_TEXTURE_2D);
+    glDisable(GL_LIGHTING);
+
+    // aperção do cone visual: deve bater com GL_SPOT_CUTOFF
+    const float CONE_DEG  = 55.0f;
+    const float PI        = 3.14159265f;
+    const float coneRad   = tanf(CONE_DEG * PI / 180.0f) * CEILING_H;
+    const int   CONE_SEGS = 24;
 
     for (const auto& p : posts)
     {
@@ -566,40 +591,75 @@ void drawLightPosts(const std::vector<LightPost>& posts,
         glPushMatrix();
         glTranslatef(p.x, 0.0f, p.z);
 
-        // --- Pilar ---
+        // -------- CONE DE LUZ SEMITRANSPARENTE --------
+        if (p.active && p.intensity > 0.05f)
+        {
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+            glDepthMask(GL_FALSE); // não escreve no z-buffer (transparente)
+
+            float alpha = 0.10f * p.intensity; // levemente visível
+            float apex  = CEILING_H - 0.15f;   // topo na lâmpada
+
+            // Faces laterais: TRIANGLE_FAN do ápice para a borda do círculo base
+            glBegin(GL_TRIANGLE_FAN);
+            // Ápice (lâmpada)
+            glColor4f(1.0f, 0.96f, 0.65f, alpha * 2.0f);
+            glVertex3f(0.0f, apex, 0.0f);
+            // Borda do círculo no chão
+            for (int i = 0; i <= CONE_SEGS; i++)
+            {
+                float ang = i * 2.0f * PI / CONE_SEGS;
+                float bx  = cosf(ang) * coneRad;
+                float bz  = sinf(ang) * coneRad;
+                // Borda mais transparente que o ápice
+                glColor4f(1.0f, 0.95f, 0.5f, 0.0f);
+                glVertex3f(bx, 0.02f, bz); // ligeiramente acima do chão
+            }
+            glEnd();
+
+            glDepthMask(GL_TRUE);
+            glDisable(GL_BLEND);
+        }
+
+        // -------- PILAR: do chão até o teto --------
+        float pillarH = CEILING_H - 0.05f;
         if (p.active && p.intensity > 0.05f) {
-            float v = 0.55f + 0.35f * p.intensity;
-            glColor3f(v * 0.6f, v * 0.55f, v * 0.2f); // amarelo-ferrugem
+            float v = 0.5f + 0.4f * p.intensity;
+            glColor3f(v * 0.55f, v * 0.50f, v * 0.20f);
         } else {
-            glColor3f(0.18f, 0.18f, 0.18f);
+            glColor3f(0.15f, 0.15f, 0.15f);
         }
         glPushMatrix();
-        glTranslatef(0.0f, 1.5f, 0.0f);
-        glScalef(0.12f, 3.0f, 0.12f);
+        glTranslatef(0.0f, pillarH * 0.5f, 0.0f);
+        glScalef(0.10f, pillarH, 0.10f);
         glutSolidCube(1.0f);
         glPopMatrix();
 
-        // --- Luminaria no topo ---
+        // -------- LÂMPADA COLADA NO TETO --------
         if (p.active && p.intensity > 0.05f) {
             float v = p.intensity;
-            glColor3f(1.0f * v, 0.95f * v, 0.6f * v);
+            glColor3f(1.0f * v, 0.96f * v, 0.65f * v);
         } else {
-            glColor3f(0.08f, 0.08f, 0.08f);
+            glColor3f(0.06f, 0.06f, 0.06f);
         }
         glPushMatrix();
-        glTranslatef(0.0f, 3.15f, 0.0f);
-        glutSolidSphere(0.28f, 10, 10);
+        glTranslatef(0.0f, CEILING_H - 0.15f, 0.0f);
+        glutSolidSphere(0.22f, 10, 10);
         glPopMatrix();
 
         glPopMatrix();
     }
 
+    glEnable(GL_LIGHTING);
     glEnable(GL_TEXTURE_2D);
     glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 // ---------------------------------------------------------------------------
-// Configura GL_LIGHT3 com o poste ativo mais próximo
+// Spotlight no teto apontando para baixo — foco com borda bem definida.
+// Requer que o chão esteja subdividido (veja desenhaQuadChao) para que
+// o per-vertex lighting mostre o círculo de luz com nitidez.
 // ---------------------------------------------------------------------------
 void setPostLightEachFrame(float postX, float postZ, float intensity, bool enabled)
 {
@@ -611,14 +671,30 @@ void setPostLightEachFrame(float postX, float postZ, float intensity, bool enabl
 
     glEnable(GL_LIGHT3);
 
-    GLfloat pos[]  = { postX, 3.0f, postZ, 1.0f }; // topo do poste
-    GLfloat diff[] = { 1.6f * intensity, 1.4f * intensity, 0.7f * intensity, 1.0f };
-    GLfloat amb[]  = { 0.35f * intensity, 0.30f * intensity, 0.12f * intensity, 1.0f };
+    // Posição exatamente no teto
+    GLfloat pos[]  = { postX, CEILING_H - 0.05f, postZ, 1.0f };
 
-    glLightfv(GL_LIGHT3, GL_POSITION, pos);
-    glLightfv(GL_LIGHT3, GL_DIFFUSE,  diff);
-    glLightfv(GL_LIGHT3, GL_AMBIENT,  amb);
-    glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION,  0.5f);
-    glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION,    0.12f);
-    glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.04f);
+    // Cor quente e intensa; sem ambient (luz focada
+    GLfloat diff[] = { 3.5f * intensity, 3.2f * intensity, 2.0f * intensity, 1.0f };
+    GLfloat amb[]  = { 0.0f, 0.0f, 0.0f, 1.0f };
+    GLfloat spec[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+    // Spotlight reto para baixo
+    GLfloat dir[]  = { 0.0f, -1.0f, 0.0f };
+
+    glLightfv(GL_LIGHT3, GL_POSITION,       pos);
+    glLightfv(GL_LIGHT3, GL_DIFFUSE,        diff);
+    glLightfv(GL_LIGHT3, GL_AMBIENT,        amb);
+    glLightfv(GL_LIGHT3, GL_SPECULAR,       spec);
+    glLightfv(GL_LIGHT3, GL_SPOT_DIRECTION, dir);
+
+    // 55° de abertura → raio no chão ≈ tan(55°) * 2.75 ≈ 3.9 unidades (~1 tile)
+    glLightf(GL_LIGHT3, GL_SPOT_CUTOFF,   55.0f);
+    // Expoente 48: borda definida mas condizente com o cone maior
+    glLightf(GL_LIGHT3, GL_SPOT_EXPONENT, 48.0f);
+
+    // Sem atenuação por distância — o cone já delimita o foco
+    glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION,  1.0f);
+    glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION,    0.0f);
+    glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.0f);
 }

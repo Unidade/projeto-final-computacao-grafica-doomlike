@@ -242,31 +242,6 @@ void gameUpdate(float dt)
         if (g.player.batteryCharge > 100.0f) g.player.batteryCharge = 100.0f;
     }
 
-    // --- DOOM-LIGHT: dano por escuridão ---
-    // Jogador é protegido se estiver perto de um poste aceso OU com lanterna ligada
-    static const float SAFE_ZONE_RADIUS   = 8.0f;  // unidades mundo
-    static const float DARKNESS_DPS       = 6.0f;  // dano por segundo
-    static const float DAMAGE_INTERVAL    = 0.6f;  // pulso de dano (s)
-
-    bool nearPost       = playerIsInSafeZone(gLevel.posts, camX, camZ, SAFE_ZONE_RADIUS);
-    bool flashProtects  = g.flashlightOn && g.player.batteryCharge > 0.0f;
-
-    if (!nearPost && !flashProtects)
-    {
-        g.player.darknessDamageTimer += dt;
-        if (g.player.darknessDamageTimer >= DAMAGE_INTERVAL)
-        {
-            int dmg = (int)(DARKNESS_DPS * DAMAGE_INTERVAL);
-            g.player.health     -= dmg;
-            g.player.damageAlpha = 0.55f;
-            g.player.darknessDamageTimer = 0.0f;
-        }
-    }
-    else
-    {
-        g.player.darknessDamageTimer = 0.0f;
-    }
-
     // 3. CHECAGEM DE GAME OVER
     if (g.player.health <= 0)
     {
@@ -314,17 +289,19 @@ void drawWorld3D()
             setPostLightEachFrame(0, 0, 0, false);
     }
 
-    // Ajuste ambient global conforme estado das luzes
+    // Ajuste ambient global: bem escuro para que o foco do poste seja nítido
     {
         LightCycleState ls = lightSystemGetState(g.lightSystem);
         if (ls == LightCycleState::ON) {
-            GLfloat amb[] = {0.045f, 0.045f, 0.06f, 1.0f};
+            // Escuro o suficiente para o pool do poste aparecer claramente
+            GLfloat amb[] = {0.008f, 0.008f, 0.012f, 1.0f};
             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb);
         } else if (ls == LightCycleState::FLICKER) {
-            GLfloat amb[] = {0.02f, 0.02f, 0.03f, 1.0f};
+            // Ainda mais escuro durante aviso
+            GLfloat amb[] = {0.004f, 0.004f, 0.006f, 1.0f};
             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb);
-        } else { // OFF
-            GLfloat amb[] = {0.005f, 0.005f, 0.008f, 1.0f};
+        } else { // OFF — quase nada, só lanterna salva
+            GLfloat amb[] = {0.002f, 0.002f, 0.003f, 1.0f};
             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb);
         }
     }
