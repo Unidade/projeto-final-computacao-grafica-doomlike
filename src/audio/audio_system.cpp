@@ -126,10 +126,7 @@ void audioInit(AudioSystem& a, const Level& level) {
 
     a.engine.setDistanceModel();
 
-    // Ambient: use added WAV files
-    a.bufAmbient = a.engine.loadWav("assets/audio/music/music_ambient_loop.wav");
-    if (!a.bufAmbient) a.bufAmbient = a.engine.loadWav("assets/audio/music/music_ambient.wav.wav");
-    if (!a.bufAmbient) a.bufAmbient = a.engine.loadWav("assets/audio/music.wav");
+    a.bufAmbient = a.engine.loadWav("assets/audio/ambient_mono.wav");
 
     a.bufChase = a.engine.loadWav("assets/audio/music/music_chase.wav.wav");
 
