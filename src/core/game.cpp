@@ -59,7 +59,8 @@ static int countBatteriesInLevel(const Level &lvl)
     int count = 0;
     for (const auto &item : lvl.items)
     {
-        if (item.type == ITEM_BATTERY) count++;
+        if (item.type == ITEM_BATTERY)
+            count++;
     }
     return count;
 }
@@ -102,8 +103,8 @@ bool gameInit(const char *mapPath)
     GLfloat zero4[] = {0.0f, 0.0f, 0.0f, 1.0f};
     glLightfv(GL_LIGHT3, GL_DIFFUSE, zero4);
     glLightfv(GL_LIGHT3, GL_AMBIENT, zero4);
-    glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION,  1.0f);
-    glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION,    0.0f);
+    glLightf(GL_LIGHT3, GL_CONSTANT_ATTENUATION, 1.0f);
+    glLightf(GL_LIGHT3, GL_LINEAR_ATTENUATION, 0.0f);
     glLightf(GL_LIGHT3, GL_QUADRATIC_ATTENUATION, 0.0f);
     glDisable(GL_LIGHT3);
 
@@ -127,7 +128,8 @@ bool gameInit(const char *mapPath)
     gHudTex.texLinternOff = gAssets.texLinternOff;
     gHudTex.texDamage = gAssets.texDamage;
     gHudTex.texHealthOverlay = gAssets.texHealthOverlay;
-    for (int i = 0; i < 3; i++) gHudTex.texKeyHud[i] = gAssets.texKey[i];
+    for (int i = 0; i < 3; i++)
+        gHudTex.texKeyHud[i] = gAssets.texKey[i];
 
     for (int i = 0; i < 5; i++)
     {
@@ -138,9 +140,10 @@ bool gameInit(const char *mapPath)
 
     g.r.texHealth = gAssets.texHealth;
     g.r.texBattery = gAssets.texBattery;
-    for (int i = 0; i < 3; i++) g.r.texKey[i] = gAssets.texKey[i];
+    for (int i = 0; i < 3; i++)
+        g.r.texKey[i] = gAssets.texKey[i];
 
-    g.r.progSangue    = gAssets.progSangue;
+    g.r.progSangue = gAssets.progSangue;
 
     // Carrega o modelo 3D do inimigo avatar (GLB)
     if (!AvatarSystem::loadModel("assets/enemies/inimigo_fase.glb"))
@@ -168,8 +171,7 @@ bool gameInit(const char *mapPath)
     g.player = PlayerState{};
     g.weapon = WeaponAnim{};
     g.flashlightOn = true;
-    g.batteriesCollectedInLevel = 0;
-    g.batteriesRequiredInLevel = countBatteriesInLevel(gLevel);
+    gLevel.batteriesCollectedInMap = 0;
 
     return true;
 }
@@ -179,14 +181,14 @@ void gameReset()
 {
     g.player.health = 100;
 
-    g.player.damageAlpha        = 0.0f;
-    g.player.healthAlpha        = 0.0f;
-    g.player.batteryCharge      = 100.0f;
-    g.player.darknessDamageTimer= 0.0f;
+    g.player.damageAlpha = 0.0f;
+    g.player.healthAlpha = 0.0f;
+    g.player.batteryCharge = 100.0f;
+    g.player.darknessDamageTimer = 0.0f;
     g.player.batteriesCollected = 0;
-    g.batteriesCollectedInLevel = 0;
-    g.batteriesRequiredInLevel = countBatteriesInLevel(gLevel);
-    for (int i = 0; i < 4; i++) g.player.hasLevelKey[i] = false;
+    gLevel.batteriesCollectedInMap = 0;
+    for (int i = 0; i < 4; i++)
+        g.player.hasLevelKey[i] = false;
 
     g.weapon.state = WeaponState::W_IDLE;
     g.weapon.timer = 0.0f;
@@ -265,12 +267,14 @@ void gameUpdate(float dt)
     else
     {
         g.player.batteryCharge += g.player.batteryRechargeRate * dt;
-        if (g.player.batteryCharge > 100.0f) g.player.batteryCharge = 100.0f;
+        if (g.player.batteryCharge > 100.0f)
+            g.player.batteryCharge = 100.0f;
     }
 
     // --- DOOR EXIT CHECK (Luzes Apagadas: need all batteries to use elevator) ---
     static float doorLockedSoundCooldown = 0.0f;
-    if (doorLockedSoundCooldown > 0.0f) doorLockedSoundCooldown -= dt;
+    if (doorLockedSoundCooldown > 0.0f)
+        doorLockedSoundCooldown -= dt;
 
     if (gLevel.hasDoor)
     {
@@ -278,7 +282,7 @@ void gameUpdate(float dt)
         float ddz = camZ - gLevel.doorZ;
         if (ddx * ddx + ddz * ddz < 4.0f) // within 2 units of door
         {
-            bool hasBatteries = (g.batteriesCollectedInLevel >= g.batteriesRequiredInLevel);
+            bool hasBatteries = (gLevel.batteriesCollectedInMap >= gLevel.batteriesRequiredInMap);
             int cl = gLevel.currentLevel;
             bool hasKey = (cl >= 1 && cl <= 3 && g.player.hasLevelKey[cl]);
 
@@ -292,32 +296,31 @@ void gameUpdate(float dt)
             }
             else if (hasBatteries && hasKey)
             {
-            if (gLevel.currentLevel >= 3)
-            {
-                g.state = GameState::VITORIA; // Won the game!
-            }
-            else
-            {
-                // Load next level
-                gLevel.currentLevel++;
-                char mapPath[64];
-                std::snprintf(mapPath, sizeof(mapPath), "maps/level%d.txt", gLevel.currentLevel);
-                int savedLevel = gLevel.currentLevel;
-                if (loadLevel(gLevel, mapPath, GameConfig::TILE_SIZE))
+                if (gLevel.currentLevel >= 3)
                 {
-                    gLevel.currentLevel = savedLevel;
-                    applySpawn(gLevel, camX, camZ);
-                    camY = GameConfig::PLAYER_EYE_Y;
-                    g.lightSystem.stateA = LightCycleState::ON;
-                    g.lightSystem.stateB = LightCycleState::OFF;
-                    g.lightSystem.timer = 0.0f;
-                    g.lightSystem.cycleCount = 0;
-                    g.levelTime = 0.0f; // reinicia tutorial no novo nivel
-                    g.batteriesCollectedInLevel = 0;
-                    g.batteriesRequiredInLevel = countBatteriesInLevel(gLevel);
-                    audioInit(gAudioSys, gLevel);
+                    g.state = GameState::VITORIA; // Won the game!
                 }
-            }
+                else
+                {
+                    // Load next level
+                    gLevel.currentLevel++;
+                    char mapPath[64];
+                    std::snprintf(mapPath, sizeof(mapPath), "maps/level%d.txt", gLevel.currentLevel);
+                    int savedLevel = gLevel.currentLevel;
+                    if (loadLevel(gLevel, mapPath, GameConfig::TILE_SIZE))
+                    {
+                        gLevel.currentLevel = savedLevel;
+                        applySpawn(gLevel, camX, camZ);
+                        camY = GameConfig::PLAYER_EYE_Y;
+                        g.lightSystem.stateA = LightCycleState::ON;
+                        g.lightSystem.stateB = LightCycleState::OFF;
+                        g.lightSystem.timer = 0.0f;
+                        g.lightSystem.cycleCount = 0;
+                        g.levelTime = 0.0f; // reinicia tutorial no novo nivel
+                        gLevel.batteriesCollectedInMap = 0;
+                        audioInit(gAudioSys, gLevel);
+                    }
+                }
             }
         }
     }
@@ -356,12 +359,18 @@ void drawWorld3D()
     // --- Luz do poste mais próximo ---
     {
         float bestDist = FLT_MAX;
-        const LightPost* best = nullptr;
-        for (const auto& p : gLevel.posts) {
-            if (!p.active || p.intensity < 0.05f) continue;
+        const LightPost *best = nullptr;
+        for (const auto &p : gLevel.posts)
+        {
+            if (!p.active || p.intensity < 0.05f)
+                continue;
             float ddx = camX - p.x, ddz = camZ - p.z;
-            float d = sqrtf(ddx*ddx + ddz*ddz);
-            if (d < bestDist) { bestDist = d; best = &p; }
+            float d = sqrtf(ddx * ddx + ddz * ddz);
+            if (d < bestDist)
+            {
+                bestDist = d;
+                best = &p;
+            }
         }
         if (best)
             setPostLightEachFrame(best->x, best->z, best->intensity, best->active);
@@ -372,13 +381,18 @@ void drawWorld3D()
     // Ambient: uniforme, visível sem light posts; safe posts acrescentam luz
     {
         LightCycleState ls = lightSystemGetState(g.lightSystem);
-        if (ls == LightCycleState::ON) {
+        if (ls == LightCycleState::ON)
+        {
             GLfloat amb[] = {0.07f, 0.07f, 0.09f, 1.0f};
             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb);
-        } else if (ls == LightCycleState::FLICKER) {
+        }
+        else if (ls == LightCycleState::FLICKER)
+        {
             GLfloat amb[] = {0.05f, 0.05f, 0.07f, 1.0f};
             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb);
-        } else {
+        }
+        else
+        {
             GLfloat amb[] = {0.04f, 0.04f, 0.06f, 1.0f};
             glLightModelfv(GL_LIGHT_MODEL_AMBIENT, amb);
         }
@@ -398,8 +412,8 @@ void gameRender()
     // Monta o estado do HUD a partir das variáveis globais do jogo
     HudState hs;
     hs.playerHealth = g.player.health;
-    hs.batteriesCollected = g.batteriesCollectedInLevel;
-    hs.batteriesRequired = g.batteriesRequiredInLevel;
+    hs.batteriesCollected = gLevel.batteriesCollectedInMap;
+    hs.batteriesRequired = gLevel.batteriesRequiredInMap;
     int cl = gLevel.currentLevel;
     hs.currentLevel = cl;
     hs.hasLevelKey = (cl >= 1 && cl <= 3) && g.player.hasLevelKey[cl];

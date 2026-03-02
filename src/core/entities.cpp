@@ -10,7 +10,7 @@
 
 bool isWalkable(float x, float z)
 {
-    auto& lvl = gameLevel();
+    auto &lvl = gameLevel();
     float tile = lvl.metrics.tile;
     float offX = lvl.metrics.offsetX;
     float offZ = lvl.metrics.offsetZ;
@@ -18,25 +18,28 @@ bool isWalkable(float x, float z)
     int tx = (int)((x - offX) / tile);
     int tz = (int)((z - offZ) / tile);
 
-    const auto& data = lvl.map.data();
+    const auto &data = lvl.map.data();
 
-    if (tz < 0 || tz >= (int)data.size()) return false;
-    if (tx < 0 || tx >= (int)data[tz].size()) return false;
+    if (tz < 0 || tz >= (int)data.size())
+        return false;
+    if (tx < 0 || tx >= (int)data[tz].size())
+        return false;
 
     char c = data[tz][tx];
     // Walls block movement
-    if (c == '1' || c == '2') return false;
+    if (c == '1' || c == '2')
+        return false;
 
     return true;
 }
 
 void updateEntities(float dt)
 {
-    auto& g = gameContext();
-    auto& lvl = gameLevel();
-    auto& audio = gameAudio();
+    auto &g = gameContext();
+    auto &lvl = gameLevel();
+    auto &audio = gameAudio();
 
-    for (auto& en : lvl.enemies)
+    for (auto &en : lvl.enemies)
     {
         if (en.state == STATE_DEAD)
         {
@@ -48,12 +51,13 @@ void updateEntities(float dt)
                 en.x = en.startX;
                 en.z = en.startZ;
                 en.hurtTimer = 0.0f;
-                en.wanderTimer = 0.0f;  // pick fresh wander dir
+                en.wanderTimer = 0.0f; // pick fresh wander dir
             }
             continue;
         }
 
-        if (en.hurtTimer > 0.0f) en.hurtTimer -= dt;
+        if (en.hurtTimer > 0.0f)
+            en.hurtTimer -= dt;
 
         // --- LUZES APAGADAS: Enemies freeze inside safe zones ---
         // If the enemy is inside the illuminated area of any active light post,
@@ -88,7 +92,7 @@ void updateEntities(float dt)
             }
             // Wander: pick new direction when timer expires or direction invalid
             bool needNewDir = (en.wanderTimer <= 0.0f) ||
-                             (en.wanderDirX == 0.0f && en.wanderDirZ == 0.0f);
+                              (en.wanderDirX == 0.0f && en.wanderDirZ == 0.0f);
             if (needNewDir)
             {
                 float angle = (float)(std::rand() % 360) * (3.14159265f / 180.0f);
@@ -110,10 +114,14 @@ void updateEntities(float dt)
                 lvl.posts, en.x, nextZ, GameConfig::SAFE_ZONE_RADIUS);
             bool canMoveX = isWalkable(nextX, en.z) && !nextInSafeZoneX;
             bool canMoveZ = isWalkable(en.x, nextZ) && !nextInSafeZoneZ;
-            if (canMoveX) en.x = nextX;
-            else en.wanderDirX = -en.wanderDirX;  // bounce off wall
-            if (canMoveZ) en.z = nextZ;
-            else en.wanderDirZ = -en.wanderDirZ;
+            if (canMoveX)
+                en.x = nextX;
+            else
+                en.wanderDirX = -en.wanderDirX; // bounce off wall
+            if (canMoveZ)
+                en.z = nextZ;
+            else
+                en.wanderDirZ = -en.wanderDirZ;
             break;
         }
 
@@ -149,8 +157,10 @@ void updateEntities(float dt)
                 bool nextInSafeZoneZ = isPositionInSafeZone(
                     lvl.posts, en.x, nextZ, GameConfig::SAFE_ZONE_RADIUS);
 
-                if (isWalkable(nextX, en.z) && !nextInSafeZoneX) en.x = nextX;
-                if (isWalkable(en.x, nextZ) && !nextInSafeZoneZ) en.z = nextZ;
+                if (isWalkable(nextX, en.z) && !nextInSafeZoneX)
+                    en.x = nextX;
+                if (isWalkable(en.x, nextZ) && !nextInSafeZoneZ)
+                    en.z = nextZ;
             }
             break;
 
@@ -182,12 +192,13 @@ void updateEntities(float dt)
         }
     }
 
-    for (auto& item : lvl.items)
+    for (auto &item : lvl.items)
     {
         if (!item.active)
         {
             item.respawnTimer -= dt;
-            if (item.respawnTimer <= 0.0f) item.active = true;
+            if (item.respawnTimer <= 0.0f)
+                item.active = true;
             continue;
         }
 
@@ -202,14 +213,15 @@ void updateEntities(float dt)
             {
                 item.respawnTimer = 15.0f;
                 g.player.health += 50;
-                if (g.player.health > 100) g.player.health = 100;
+                if (g.player.health > 100)
+                    g.player.health = 100;
                 g.player.healthAlpha = 1.0f;
             }
             else if (item.type == ITEM_BATTERY)
             {
                 item.respawnTimer = 999999.0f;
                 g.player.batteriesCollected++;
-                g.batteriesCollectedInLevel++;
+                lvl.batteriesCollectedInMap++;
                 audioPlayBatteryPickup(audio);
             }
             else if (item.type == ITEM_KEY)
