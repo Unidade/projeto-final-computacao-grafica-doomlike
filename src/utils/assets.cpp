@@ -52,7 +52,7 @@ bool loadAssets(GameAssets &a)
     a.texLinternOff = carregaTextura("assets/linternOff.png");
     a.texDamage = carregaTextura("assets/damage.png");
 
-    a.texHealth = carregaTextura("assets/health.png");
+    a.texHealth = carregaTextura("assets/status/heart pixel art 64x64.png");
     a.texBattery0 = carregaTextura("assets/items/battery0.png");
     a.texBattery25 = carregaTextura("assets/items/battery25.png");
     a.texBattery50 = carregaTextura("assets/items/battery50.png");
