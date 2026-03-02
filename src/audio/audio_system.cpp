@@ -126,9 +126,12 @@ void audioInit(AudioSystem& a, const Level& level) {
 
     a.engine.setDistanceModel();
 
-    // Ambient: try music_ambient_loop (convert ogg/mp3 to WAV if needed)
+    // Ambient: use added WAV files
     a.bufAmbient = a.engine.loadWav("assets/audio/music/music_ambient_loop.wav");
+    if (!a.bufAmbient) a.bufAmbient = a.engine.loadWav("assets/audio/music/music_ambient.wav.wav");
     if (!a.bufAmbient) a.bufAmbient = a.engine.loadWav("assets/audio/music.wav");
+
+    a.bufChase = a.engine.loadWav("assets/audio/music/music_chase.wav.wav");
 
     a.bufStep = a.engine.loadWav("assets/audio/sfx/sfx_step_concrete_01.wav.wav");
     if (!a.bufStep) a.bufStep = a.engine.loadWav("assets/audio/step_mono.wav");

@@ -23,6 +23,7 @@ struct AudioSystem {
 
     // Buffers
     ALuint bufAmbient = 0;
+    ALuint bufChase = 0;
     ALuint bufStep = 0;
     ALuint bufHurt = 0;
     ALuint bufClickReload = 0;
@@ -40,6 +41,7 @@ struct AudioSystem {
 
     // Sources
     ALuint srcAmbient = 0;
+    ALuint srcChase = 0;
     ALuint srcStep = 0;
     ALuint srcHurt = 0;
     ALuint srcClickReload = 0;
