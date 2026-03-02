@@ -43,6 +43,7 @@ struct RenderAssets
     GLuint texKey[3] = {0, 0, 0};
 
     GLuint progSangue = 0;
+    GLuint progBatteryFlash = 0; // glow verde
 };
 
 struct GameContext
@@ -64,6 +65,9 @@ struct GameContext
     // Mensagem de porta bloqueada (mostrada no HUD)
     float doorMessageTimer = 0.0f;
     const char* doorMessageText = nullptr;
+
+    // Flash verde ao coletar todas as baterias
+    float allBatteriesFlashTimer = 0.0f;
 
     RenderAssets r;
 };

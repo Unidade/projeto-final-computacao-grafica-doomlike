@@ -223,6 +223,14 @@ void updateEntities(float dt)
                 g.player.batteriesCollected++;
                 lvl.batteriesCollectedInMap++;
                 audioPlayBatteryPickup(audio);
+                // Flash verde ao completar todas as baterias
+                if (lvl.batteriesCollectedInMap >= lvl.batteriesRequiredInMap
+                    && lvl.batteriesRequiredInMap > 0)
+                {
+                    g.allBatteriesFlashTimer = 2.5f;
+                    g.doorMessageText  = "Todas as baterias coletadas!";
+                    g.doorMessageTimer = 3.0f;
+                }
             }
             else if (item.type == ITEM_KEY)
             {

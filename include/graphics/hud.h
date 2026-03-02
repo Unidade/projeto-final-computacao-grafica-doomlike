@@ -11,6 +11,7 @@ struct HudTextures
     GLuint texDamage = 0;
     GLuint texHealthOverlay = 0;
     GLuint texKeyHud[3] = {0, 0, 0}; // Key0, Key1, Key2 for levels 1-3
+    GLuint progBatteryFlash = 0;     // shader de glow verde
 };
 
 struct HudState
@@ -29,6 +30,9 @@ struct HudState
     // Mensagem de porta bloqueada (nulo = sem mensagem)
     const char* doorMessage = nullptr;
     float doorMessageAlpha = 0.0f;
+
+    // Flash verde ao coletar todas as baterias (0.0 = inativo, 1.0 = pleno)
+    float allBatteriesFlashAlpha = 0.0f;
 };
 
 void hudRenderAll(

@@ -221,7 +221,12 @@ static void drawStatusBar(int w, int h, const HudTextures& tex, const HudState& 
     float xBattery = w * 0.52f;
     glColor3fv(colLbl);
     uiDrawStrokeText(xBattery, hBar * 0.20f, "BATERIAS (FASE)", scaleLbl);
-    glColor3f(0.6f, 0.9f, 0.4f);
+    // Verde brilhante se completo, verde normal se em progresso
+    bool allDone = (s.batteriesRequired > 0 && s.batteriesCollected >= s.batteriesRequired);
+    if (allDone)
+        glColor3f(0.2f, 1.0f, 0.3f); // verde vivo
+    else
+        glColor3f(0.6f, 0.9f, 0.4f); // verde suave normal
     glPushMatrix();
     glTranslatef(xBattery + 5.0f, hBar * 0.50f, 0);
     glScalef(scaleNum, scaleNum, 1);
@@ -312,6 +317,68 @@ static void drawDoorMessage(int w, int h, const char* msg, float alpha)
     float tx = bx + (bW - textW) / 2.0f;
     float ty = by + pad + lineH * 0.15f;
     uiDrawStrokeText(tx, ty, msg, scale);
+
+    end2D();
+    glPopAttrib();
+}
+
+// Flash verde de tela cheia quando todas as baterias são coletadas.
+// Usa um vignette de bordas pulsado com blending aditivo para imitar um glow.
+static void drawAllBatteriesFlash(int w, int h, float alpha)
+{
+    if (alpha <= 0.0f)
+        return;
+
+    // Pulso: faz alpha oscilar para efeito de brilho vivo
+    // (usa o próprio alpha que já decai linearmente de 1→0 em 2.5s)
+    // Para os primeiros 0.3s força alpha máximo para impacto imediato
+    float pulse = alpha; // já está em [0,1]
+
+    glPushAttrib(GL_ALL_ATTRIB_BITS);
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+
+    begin2D(w, h);
+
+    float fw = (float)w, fh = (float)h;
+    float vigW = fw * 0.35f; // largura do vignette nas bordas
+
+    // Blending aditivo: adiciona verde ao que já existe na tela
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+
+    // Borda esquerda
+    glBegin(GL_QUADS);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.55f * pulse);
+    glVertex2f(0,    0);    glVertex2f(0,    fh);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.0f);
+    glVertex2f(vigW, fh);   glVertex2f(vigW, 0);
+    glEnd();
+
+    // Borda direita
+    glBegin(GL_QUADS);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.0f);
+    glVertex2f(fw - vigW, 0);  glVertex2f(fw - vigW, fh);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.55f * pulse);
+    glVertex2f(fw,        fh); glVertex2f(fw,        0);
+    glEnd();
+
+    // Borda superior
+    glBegin(GL_QUADS);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.55f * pulse);
+    glVertex2f(0,  0);  glVertex2f(fw, 0);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.0f);
+    glVertex2f(fw, vigW); glVertex2f(0, vigW);
+    glEnd();
+
+    // Borda inferior
+    glBegin(GL_QUADS);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.0f);
+    glVertex2f(0,  fh - vigW); glVertex2f(fw, fh - vigW);
+    glColor4f(0.0f, 1.0f, 0.1f, 0.55f * pulse);
+    glVertex2f(fw, fh);        glVertex2f(0,  fh);
+    glEnd();
 
     end2D();
     glPopAttrib();
@@ -412,6 +479,7 @@ void hudRenderAll(
     if (showCrosshair) drawCrosshair(screenW, screenH);
 
     drawDoorMessage(screenW, screenH, state.doorMessage, state.doorMessageAlpha);
+    drawAllBatteriesFlash(screenW, screenH, state.allBatteriesFlashAlpha);
     drawDamageOverlay(screenW, screenH, tex.texDamage, state.damageAlpha);
     drawHealthOverlay(screenW, screenH, tex.texHealthOverlay, state.healthAlpha);
 }

@@ -19,6 +19,7 @@ bool loadAssets(GameAssets &a)
     a.texDoor = carregaTextura("assets/textures/doors/door_metal_closed.png.png");
 
     a.progSangue = criaShader("shaders/blood.vert", "shaders/blood.frag");
+    a.progBatteryFlash = criaShader("shaders/battery_flash.vert", "shaders/battery_flash.frag");
 
     // --- INIMIGO 0 ('J') ---
     a.texEnemies[0] = carregaTextura("assets/enemies/enemy.png");

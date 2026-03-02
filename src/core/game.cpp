@@ -285,6 +285,10 @@ void gameUpdate(float dt)
     else
         g.doorMessageText = nullptr;
 
+    // Decai timer do flash de baterias
+    if (g.allBatteriesFlashTimer > 0.0f)
+        g.allBatteriesFlashTimer -= dt;
+
     if (gLevel.hasDoor && !gLevel.doorOpen)
     {
         float ddx = camX - gLevel.doorX;
@@ -470,6 +474,9 @@ void gameRender()
     // Mensagem de porta bloqueada (fade baseado no timer)
     hs.doorMessageAlpha = (g.doorMessageTimer > 0.0f) ? std::fmin(g.doorMessageTimer, 1.0f) : 0.0f;
     hs.doorMessage = (hs.doorMessageAlpha > 0.0f) ? g.doorMessageText : nullptr;
+    // Flash de baterias completas
+    hs.allBatteriesFlashAlpha = (g.allBatteriesFlashTimer > 0.0f)
+        ? std::fmin(g.allBatteriesFlashTimer / 2.5f, 1.0f) : 0.0f;
 
     // --- ESTADO: MENU INICIAL ---
     if (g.state == GameState::MENU_INICIAL)
