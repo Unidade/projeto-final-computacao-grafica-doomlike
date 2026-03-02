@@ -55,6 +55,8 @@ bool loadAssets(GameAssets &a)
 
     a.texHealth = carregaTextura("assets/health.png");
     a.texAmmo = carregaTextura("assets/066.png");
+    a.texBattery = carregaTextura("assets/battery.png");
+    if (!a.texBattery) a.texBattery = a.texAmmo; // fallback if battery.png missing
 
     a.texSkydome = carregaTextura("assets/menu_bg.png");
 

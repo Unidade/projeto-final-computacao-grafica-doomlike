@@ -99,6 +99,16 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
                 i.active = true;
                 lvl.items.push_back(i);
             }
+            else if (c == 'V') // Bateria (Luzes Apagadas)
+            {
+                Item i;
+                i.x = wx;
+                i.z = wz;
+                i.type = ITEM_BATTERY;
+                i.active = true;
+                i.respawnTimer = 0.0f;
+                lvl.items.push_back(i);
+            }
             else if (c == 'P') // Poste de Luz
             {
                 LightPost lp;

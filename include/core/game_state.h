@@ -18,6 +18,9 @@ struct PlayerState
     float batteryDrainRate    = 8.0f;   // unidades/s quando ligada
     float batteryRechargeRate = 3.0f;   // unidades/s quando desligada
     float darknessDamageTimer = 0.0f;   // acumulador de intervalo de dano
+
+    // --- Luzes Apagadas: battery collectible objective ---
+    int batteriesCollected = 0;
 };
 
 struct WeaponAnim
@@ -38,6 +41,7 @@ struct RenderAssets
 
     GLuint texHealth = 0;
     GLuint texAmmo = 0;
+    GLuint texBattery = 0;
 
     GLuint progSangue = 0;
 };

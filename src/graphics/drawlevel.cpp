@@ -145,23 +145,21 @@ static void endIndoor()
     glEnable(GL_LIGHT0);
 }
 
-static void desenhaQuadTeto(float x, float z, float tile, float tilesUV)
+static void desenhaQuadTeto(float x, float z, float tile, float tilesUV, GLuint texTeto)
 {
     float half = tile * 0.5f;
 
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glColor3f(0.0f, 0.0f, 0.0f);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glBindTexture(GL_TEXTURE_2D, texTeto);
 
     glBegin(GL_QUADS);
     glNormal3f(0.0f, -1.0f, 0.0f);
 
-    glVertex3f(x - half, CEILING_H, z - half);
-    glVertex3f(x + half, CEILING_H, z - half);
-    glVertex3f(x + half, CEILING_H, z + half);
-    glVertex3f(x - half, CEILING_H, z + half);
+    glTexCoord2f(0.0f, 0.0f); glVertex3f(x - half, CEILING_H, z - half);
+    glTexCoord2f(tilesUV, 0.0f); glVertex3f(x + half, CEILING_H, z - half);
+    glTexCoord2f(tilesUV, tilesUV); glVertex3f(x + half, CEILING_H, z + half);
+    glTexCoord2f(0.0f, tilesUV); glVertex3f(x - half, CEILING_H, z + half);
     glEnd();
-
-    glColor3f(1.0f, 1.0f, 1.0f);
 }
 
 // Desenha o chão subdividido em NxN para que o per-vertex lighting
@@ -204,7 +202,7 @@ static void desenhaQuadChao(float x, float z, float tile, float tilesUV)
     }
 }
 
-static void desenhaTileChao(float x, float z, GLuint texChaoX, bool /*temTeto*/)
+static void desenhaTileChao(float x, float z, GLuint texChaoX, bool /*temTeto*/, GLuint texTeto)
 {
     glUseProgram(0);
 
@@ -214,9 +212,8 @@ static void desenhaTileChao(float x, float z, GLuint texChaoX, bool /*temTeto*/)
 
     desenhaQuadChao(x, z, TILE, 2.0f);
 
-    // Teto sempre sem shader (preto puro)
     glUseProgram(0);
-    desenhaQuadTeto(x, z, TILE, 2.0f);
+    desenhaQuadTeto(x, z, TILE, 2.0f, texTeto);
 }
 
 // --- Desenha parede FACE POR FACE ---
@@ -313,7 +310,7 @@ static void desenhaParedeCuboCompleto(float x, float z, GLuint texParedeX)
 static void desenhaTileDoor(float x, float z, const RenderAssets &r)
 {
     // Chão sob a porta
-    desenhaTileChao(x, z, r.texChao, false);
+    desenhaTileChao(x, z, r.texChao, false, r.texTeto);
 
     // A porta em si: quad vertical no centro do tile
     float doorW = TILE * 0.8f;
@@ -356,7 +353,7 @@ static void desenhaTileSangue(float x, float z, const RenderAssets &r, float tim
     desenhaQuadChao(x, z, TILE, 2.0f);
 
     glUseProgram(0);
-    desenhaQuadTeto(x, z, TILE, 2.0f);
+    desenhaQuadTeto(x, z, TILE, 2.0f, r.texTeto);
 }
 
 // --- Checa vizinhos ---
@@ -375,7 +372,7 @@ static char getTileAt(const MapLoader &map, int tx, int tz)
 
 static void drawFace(float wx, float wz, int face, char neighbor, GLuint texParedeInternaX, float time)
 {
-    bool outside = (neighbor == '0' || neighbor == 'B' || neighbor == 'D');
+    bool outside = (neighbor != '1' && neighbor != '2' && neighbor != '3');
 
     if (outside)
     {
@@ -417,8 +414,8 @@ void drawLevel(const MapLoader &map, float px, float pz, float dx, float dz, con
             char c = data[z][x];
 
             bool isEntity = (c == 'J' || c == 'T' || c == 'M' || c == 'K' ||
-                             c == 'G' || c == 'H' || c == 'A' || c == 'E' ||
-                             c == 'F' || c == 'I' || c == 'P' || c == 'D');
+                             c == 'G' || c == 'H' || c == 'A' || c == 'V' ||
+                             c == 'E' || c == 'F' || c == 'I' || c == 'P' || c == 'D');
 
             if (isEntity)
             {
@@ -435,22 +432,22 @@ void drawLevel(const MapLoader &map, float px, float pz, float dx, float dz, con
                 if (isIndoor)
                 {
                     beginIndoor(wx, wz, time);
-                    desenhaTileChao(wx, wz, r.texChaoInterno, true);
+                    desenhaTileChao(wx, wz, r.texChaoInterno, true, r.texTeto);
                     endIndoor();
                 }
                 else
                 {
-                    desenhaTileChao(wx, wz, r.texChao, false);
+                    desenhaTileChao(wx, wz, r.texChao, false, r.texTeto);
                 }
             }
             else if (c == '0')
             {
-                desenhaTileChao(wx, wz, r.texChao, false);
+                desenhaTileChao(wx, wz, r.texChao, false, r.texTeto);
             }
             else if (c == '3')
             {
                 beginIndoor(wx, wz, time);
-                desenhaTileChao(wx, wz, r.texChaoInterno, true);
+                desenhaTileChao(wx, wz, r.texChaoInterno, true, r.texTeto);
                 endIndoor();
             }
             else if (c == '1')
@@ -549,6 +546,8 @@ void drawEntities(const std::vector<Enemy> &enemies, const std::vector<Item> &it
             drawSprite(item.x, item.z, 0.7f, 0.7f, r.texHealth, camX, camZ);
         else if (item.type == ITEM_AMMO)
             drawSprite(item.x, item.z, 0.7f, 0.7f, r.texAmmo, camX, camZ);
+        else if (item.type == ITEM_BATTERY)
+            drawSprite(item.x, item.z, 0.7f, 0.7f, r.texBattery, camX, camZ);
     }
 
     // --- INIMIGOS (todos são 3D Avatar) ---

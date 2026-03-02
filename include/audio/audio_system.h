@@ -88,6 +88,7 @@ void audioPlayReload(AudioSystem& a);
 void audioPlayPumpClick(AudioSystem& a);
 void audioPlayHurt(AudioSystem& a);
 void audioPlayKillAt(AudioSystem& a, float x, float z);
+void audioPlayBatteryPickup(AudioSystem& a);
 
 // Utilitário (se você quiser tocar "grunhido" a cada N tiros)
 void audioOnPlayerShot(AudioSystem& a);

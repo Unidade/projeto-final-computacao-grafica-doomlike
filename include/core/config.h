@@ -18,4 +18,11 @@ namespace GameConfig
     constexpr float CONE_ANGLE_DEG = 55.0f;
     // Can't use tanf in constexpr, so pre-compute: tan(55° * π/180) ≈ 1.4281
     constexpr float SAFE_ZONE_RADIUS = 7.14f;
+
+    // Luzes Apagadas: batteries needed to activate elevator
+    constexpr int BATTERIES_REQUIRED = 14;
+
+    // Light cycle tuning (used by LightSystem)
+    constexpr float LIGHT_CYCLE_ON_SECONDS = 6.0f;
+    constexpr float LIGHT_CYCLE_FLICKER_SECONDS = 2.0f;
 }

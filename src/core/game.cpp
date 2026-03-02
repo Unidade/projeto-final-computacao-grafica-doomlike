@@ -133,6 +133,7 @@ bool gameInit(const char *mapPath)
 
     g.r.texHealth = gAssets.texHealth;
     g.r.texAmmo = gAssets.texAmmo;
+    g.r.texBattery = gAssets.texBattery;
 
     g.r.progSangue    = gAssets.progSangue;
 
@@ -176,6 +177,7 @@ void gameReset()
     g.player.healthAlpha        = 0.0f;
     g.player.batteryCharge      = 100.0f;
     g.player.darknessDamageTimer= 0.0f;
+    g.player.batteriesCollected = 0;
 
     g.weapon.state = WeaponState::W_IDLE;
     g.weapon.timer = 0.0f;
@@ -254,13 +256,26 @@ void gameUpdate(float dt)
         if (g.player.batteryCharge > 100.0f) g.player.batteryCharge = 100.0f;
     }
 
-    // --- DOOR EXIT CHECK ---
+    // --- DOOR EXIT CHECK (Luzes Apagadas: need all batteries to use elevator) ---
+    static float doorLockedSoundCooldown = 0.0f;
+    if (doorLockedSoundCooldown > 0.0f) doorLockedSoundCooldown -= dt;
+
     if (gLevel.hasDoor)
     {
         float ddx = camX - gLevel.doorX;
         float ddz = camZ - gLevel.doorZ;
         if (ddx * ddx + ddz * ddz < 4.0f) // within 2 units of door
         {
+            if (g.player.batteriesCollected < GameConfig::BATTERIES_REQUIRED)
+            {
+                if (doorLockedSoundCooldown <= 0.0f)
+                {
+                    audioPlayPumpClick(gAudioSys);
+                    doorLockedSoundCooldown = 2.0f;
+                }
+            }
+            else if (g.player.batteriesCollected >= GameConfig::BATTERIES_REQUIRED)
+            {
             if (gLevel.currentLevel >= 3)
             {
                 g.state = GameState::VITORIA; // Won the game!
@@ -283,6 +298,7 @@ void gameUpdate(float dt)
                     g.lightSystem.cycleCount = 0;
                     audioInit(gAudioSys, gLevel);
                 }
+            }
             }
         }
     }
@@ -367,6 +383,8 @@ void gameRender()
     hs.playerHealth = g.player.health;
     hs.currentAmmo = g.player.currentAmmo;
     hs.reserveAmmo = g.player.reserveAmmo;
+    hs.batteriesCollected = g.player.batteriesCollected;
+    hs.batteriesRequired = GameConfig::BATTERIES_REQUIRED;
     hs.damageAlpha = g.player.damageAlpha;
     hs.healthAlpha = g.player.healthAlpha;
     hs.weaponState = g.weapon.state;
@@ -387,7 +405,7 @@ void gameRender()
     else if (g.state == GameState::VITORIA)
     {
         drawWorld3D();
-        menuRender(janelaW, janelaH, g.time, "VOCE VENCEU!", "Pressione ENTER para Jogar Novamente", g.r);
+        menuRender(janelaW, janelaH, g.time, "LUZES APAGADAS — VOCE ESCAPOU!", "Pressione ENTER para Jogar Novamente", g.r);
     }
     // --- ESTADO: PAUSADO ---
     else if (g.state == GameState::PAUSADO)

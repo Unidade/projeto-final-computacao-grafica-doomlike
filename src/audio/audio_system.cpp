@@ -438,6 +438,10 @@ void audioPlayKillAt(AudioSystem& a, float x, float z) {
     play3DAt(a, a.srcKill, x, z);
 }
 
+void audioPlayBatteryPickup(AudioSystem& a) {
+    play2D(a, a.srcClickReload);
+}
+
 void audioOnPlayerShot(AudioSystem& a) {
     if (!a.ok) return;
     a.shotsSinceGrunt++;
