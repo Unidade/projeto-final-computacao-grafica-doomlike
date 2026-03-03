@@ -1,11 +1,26 @@
 #include "level/level.h"
 #include "core/config.h"
 #include "core/lightpost.h"
-#include "core/avatarEnemy.h"
 #include <cstdio>
 
 // Configurações básicas para spawn
 static const float ENEMY_START_HP = 100.0f;
+
+static EnemyType enemyTypeFromMapChar(char c)
+{
+    switch (c)
+    {
+    case 'M':
+        return EnemyType::BOSS;
+    case 'T':
+    case 'K':
+        return EnemyType::STALKER;
+    case 'J':
+    case 'G':
+    default:
+        return EnemyType::BASIC;
+    }
+}
 
 bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
 {
@@ -26,8 +41,7 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
     lvl.doorOpen = false; // porta começa fechada
     lvl.batteriesCollectedInMap = 0;
     lvl.batteriesRequiredInMap = 0;
-    lvl.spawnX = 0.0f;
-    lvl.spawnZ = 0.0f;
+    lvl.metrics.spawnPos(lvl.map, lvl.spawnX, lvl.spawnZ);
 
     // 2. Escaneia o mapa procurando Entidades (E, H, etc)
     // Precisamos acessar os dados brutos do MapLoader como referência mudável
@@ -65,7 +79,7 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
             {
                 Enemy e;
                 e.type = enemyType;
-                e.typeEnum = enemyTypeFromInt(enemyType);
+                e.typeEnum = enemyTypeFromMapChar(c);
                 e.isAvatar = true;  // TODOS os inimigos são avatar 3D
 
                 e.x = wx;
@@ -150,11 +164,6 @@ bool loadLevel(Level &lvl, const char *mapPath, float tileSize)
                 lvl.hasDoor = true;
                 lvl.doorX = wx;
                 lvl.doorZ = wz;
-            }
-            else if (c == '9') // Spawn do jogador — salva para SafePost zone
-            {
-                lvl.spawnX = wx;
-                lvl.spawnZ = wz;
             }
         }
     }

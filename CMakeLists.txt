@@ -180,6 +180,27 @@ set(DOOMLIKE_SOURCES
     ${CMAKE_SOURCE_DIR}/src/utils/utils.cpp
 )
 
+set(DOOMLIKE_LEVEL_VALIDATOR_SOURCES
+    ${CMAKE_SOURCE_DIR}/src/tools/level_validator_main.cpp
+    ${CMAKE_SOURCE_DIR}/src/level/level.cpp
+    ${CMAKE_SOURCE_DIR}/src/level/level_validation.cpp
+    ${CMAKE_SOURCE_DIR}/src/level/levelmetrics.cpp
+    ${CMAKE_SOURCE_DIR}/src/level/maploader.cpp
+)
+
+file(GLOB DOOMLIKE_LEVEL_MAP_FILES LIST_DIRECTORIES FALSE
+    "${CMAKE_SOURCE_DIR}/maps/level*.txt"
+)
+
+set(DOOMLIKE_LEVEL_MAPS)
+foreach(level_map IN LISTS DOOMLIKE_LEVEL_MAP_FILES)
+    get_filename_component(level_name "${level_map}" NAME_WE)
+    string(REGEX MATCH "level([0-9]+)$" _ "${level_name}")
+    if(CMAKE_MATCH_1)
+        list(APPEND DOOMLIKE_LEVEL_MAPS "${level_map}" "${CMAKE_MATCH_1}")
+    endif()
+endforeach()
+
 add_executable(${PROJECT_NAME})
 
 target_sources(${PROJECT_NAME} PRIVATE ${DOOMLIKE_SOURCES})
@@ -202,6 +223,29 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${GLUT_TARGET}
     ${OPENAL_TARGET}
 )
+
+add_executable(DoomLikeLevelValidator)
+
+target_sources(DoomLikeLevelValidator PRIVATE ${DOOMLIKE_LEVEL_VALIDATOR_SOURCES})
+
+target_compile_features(DoomLikeLevelValidator PRIVATE cxx_std_17)
+
+target_compile_options(DoomLikeLevelValidator PRIVATE
+    $<$<CXX_COMPILER_ID:GNU,Clang>:-Wall -Wextra -g -O0>
+    $<$<CXX_COMPILER_ID:MSVC>:/W4 /Zi /Od>
+)
+
+target_include_directories(DoomLikeLevelValidator PRIVATE
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+add_custom_target(validate_levels ALL
+    COMMAND $<TARGET_FILE:DoomLikeLevelValidator> ${DOOMLIKE_LEVEL_MAPS}
+    DEPENDS DoomLikeLevelValidator
+    COMMENT "Validating level progression"
+)
+
+add_dependencies(${PROJECT_NAME} validate_levels)
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
