@@ -531,22 +531,7 @@ void gameRender()
         {
             auto &a = gameAudio();
             if (a.ok) {
-                if (a.srcVictory && a.victoryPlaying) {
-                    a.engine.stop(a.srcVictory);
-                    a.victoryPlaying = false;
-                }
-                if (a.srcAmbient) {
-                    a.engine.setSourceGain(a.srcAmbient, 0.0f);
-                }
-                if (a.srcChase) {
-                    a.engine.setSourceGain(a.srcChase, 0.0f);
-                    a.engine.stop(a.srcChase);
-                }
-                if (a.srcIntro && !a.introPlaying) {
-                    a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
-                    a.engine.play(a.srcIntro);
-                    a.introPlaying = true;
-                }
+                audioStartMenuMusic(a);
             }
         }
         // A imagem de fundo já contém o texto de instrução;
@@ -560,22 +545,7 @@ void gameRender()
         {
             auto &a = gameAudio();
             if (a.ok) {
-                if (a.srcVictory && a.victoryPlaying) {
-                    a.engine.stop(a.srcVictory);
-                    a.victoryPlaying = false;
-                }
-                if (a.srcAmbient) {
-                    a.engine.setSourceGain(a.srcAmbient, 0.0f);
-                }
-                if (a.srcChase) {
-                    a.engine.setSourceGain(a.srcChase, 0.0f);
-                    a.engine.stop(a.srcChase);
-                }
-                if (a.srcIntro && !a.introPlaying) {
-                    a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
-                    a.engine.play(a.srcIntro);
-                    a.introPlaying = true;
-                }
+                audioStartMenuMusic(a);
             }
         }
         menuRenderGameOver(janelaW, janelaH, g.time, g.r);
@@ -586,23 +556,9 @@ void gameRender()
         // Garante que a música de vitória esteja tocando (e chase/ambient estejam silenciosos)
         {
             auto &a = gameAudio();
-            if (a.ok && a.bufVictory && a.srcVictory)
+            if (a.ok)
             {
-                if (!a.victoryPlaying)
-                {
-                    // Silencia música de chase e ambiente
-                    if (a.srcChase) a.engine.setSourceGain(a.srcChase, 0.0f);
-                    if (a.srcAmbient) a.engine.setSourceGain(a.srcAmbient, 0.0f);
-                    if (a.srcIntro && a.introPlaying) {
-                        a.engine.stop(a.srcIntro);
-                        a.introPlaying = false;
-                    }
-                    a.engine.stop(a.srcChase);
-
-                    a.engine.setSourceGain(a.srcVictory, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
-                    a.engine.play(a.srcVictory);
-                    a.victoryPlaying = true;
-                }
+                audioStartVictoryMusic(a);
             }
         }
 
@@ -616,18 +572,7 @@ void gameRender()
         {
             auto &a = gameAudio();
             if (a.ok) {
-                if (a.srcAmbient) {
-                    a.engine.setSourceGain(a.srcAmbient, 0.0f);
-                }
-                if (a.srcChase) {
-                    a.engine.setSourceGain(a.srcChase, 0.0f);
-                    a.engine.stop(a.srcChase);
-                }
-                if (a.srcIntro && !a.introPlaying) {
-                    a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
-                    a.engine.play(a.srcIntro);
-                    a.introPlaying = true;
-                }
+                audioStartMenuMusic(a);
             }
         }
         drawWorld3D();
@@ -649,20 +594,7 @@ void gameRender()
         {
             auto &a = gameAudio();
             if (a.ok) {
-                if (a.srcIntro && a.introPlaying) {
-                    a.engine.stop(a.srcIntro);
-                    a.introPlaying = false;
-                }
-                // ambient/chase são controlados por audioUpdate; aqui só garantimos
-                // que o ambient pode voltar a ter ganho > 0 se não houver chase.
-                if (a.srcAmbient && !a.victoryPlaying) {
-                    // ganho final será ajustado pelo audioUpdate (anyChasing).
-                    // Não chamamos play aqui porque audioUpdate já garante isso.
-                }
-                if (a.srcVictory && a.victoryPlaying && g.state != GameState::VITORIA) {
-                    a.engine.stop(a.srcVictory);
-                    a.victoryPlaying = false;
-                }
+                audioStartGameplayMusic(a);
             }
         }
         drawWorld3D();

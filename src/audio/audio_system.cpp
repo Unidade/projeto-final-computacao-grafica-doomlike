@@ -16,6 +16,10 @@ static void stopIf(ALuint s, AudioEngine& e) {
     if (s) e.stop(s);
 }
 
+static inline void stopSrc(AudioSystem& a, ALuint s) {
+    if (a.ok && s) a.engine.stop(s);
+}
+
 static void play2D(AudioSystem& a, ALuint s) {
     if (!a.ok || s == 0) return;
     a.engine.stop(s);
@@ -270,6 +274,91 @@ void audioInit(AudioSystem& a, const Level& level) {
     ensureEnemyExtra(a, level);
 }
 
+void audioStartMenuMusic(AudioSystem& a) {
+    if (!a.ok) return;
+
+    if (a.srcAmbient) {
+        a.engine.setSourceGain(a.srcAmbient, 0.0f);
+    }
+    if (a.srcChase) {
+        a.engine.setSourceGain(a.srcChase, 0.0f);
+    }
+
+    if (a.ambientPlaying) {
+        stopSrc(a, a.srcAmbient);
+        a.ambientPlaying = false;
+    }
+    if (a.chasePlaying) {
+        stopSrc(a, a.srcChase);
+        a.chasePlaying = false;
+    }
+    if (a.victoryPlaying) {
+        stopSrc(a, a.srcVictory);
+        a.victoryPlaying = false;
+    }
+
+    if (a.srcIntro && !a.introPlaying) {
+        a.engine.setSourceGain(a.srcIntro, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+        a.engine.play(a.srcIntro);
+        a.introPlaying = true;
+    }
+}
+
+void audioStartGameplayMusic(AudioSystem& a) {
+    if (!a.ok) return;
+
+    if (a.introPlaying) {
+        stopSrc(a, a.srcIntro);
+        a.introPlaying = false;
+    }
+    if (a.victoryPlaying) {
+        stopSrc(a, a.srcVictory);
+        a.victoryPlaying = false;
+    }
+
+    if (a.srcAmbient && !a.ambientPlaying) {
+        a.engine.setSourceGain(a.srcAmbient, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+        a.engine.play(a.srcAmbient);
+        a.ambientPlaying = true;
+    }
+
+    if (a.srcChase && a.chasePlaying) {
+        a.engine.setSourceGain(a.srcChase, 0.0f);
+        stopSrc(a, a.srcChase);
+        a.chasePlaying = false;
+    }
+}
+
+void audioStartVictoryMusic(AudioSystem& a) {
+    if (!a.ok) return;
+
+    if (a.introPlaying) {
+        stopSrc(a, a.srcIntro);
+        a.introPlaying = false;
+    }
+    if (a.ambientPlaying) {
+        stopSrc(a, a.srcAmbient);
+        a.ambientPlaying = false;
+    }
+    if (a.chasePlaying) {
+        stopSrc(a, a.srcChase);
+        a.chasePlaying = false;
+    }
+
+    if (a.srcAmbient) {
+        a.engine.setSourceGain(a.srcAmbient, 0.0f);
+    }
+    if (a.srcChase) {
+        a.engine.setSourceGain(a.srcChase, 0.0f);
+    }
+
+    if (a.srcVictory && !a.victoryPlaying) {
+        a.engine.setSourceGain(a.srcVictory, AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
+        a.engine.play(a.srcVictory);
+        a.victoryPlaying = true;
+    }
+}
+
 void audioUpdate(
     AudioSystem& a,
     const Level& level,
@@ -365,35 +454,38 @@ void audioUpdate(
         a.enemyPrevState[i] = (int)en.state;
     }
 
-    // Chase music: when player enters chase radius (enemy chasing/attacking), switch to chase
+    // Chase detection is independent from chase music availability so ambient
+    // still works if the chase asset/source fails to initialize.
     bool anyChasing = false;
-    if (a.srcChase && a.bufChase) {
-        for (size_t i = 0; i < level.enemies.size(); ++i) {
-            const auto& en = level.enemies[i];
-            if (en.state != STATE_DEAD && (en.state == STATE_CHASE || en.state == STATE_ATTACK)) {
-                float dx = en.x - listener.pos.x;
-                float dz = en.z - listener.pos.z;
-                float dist = std::sqrt(dx * dx + dz * dz);
-                float chaseView = getEnemyViewDist(en.typeEnum);
-                if (dist <= chaseView) {
-                    anyChasing = true;
-                    break;
-                }
+    for (size_t i = 0; i < level.enemies.size(); ++i) {
+        const auto& en = level.enemies[i];
+        if (en.state != STATE_DEAD && (en.state == STATE_CHASE || en.state == STATE_ATTACK)) {
+            float dx = en.x - listener.pos.x;
+            float dz = en.z - listener.pos.z;
+            float dist = std::sqrt(dx * dx + dz * dz);
+            float chaseView = getEnemyViewDist(en.typeEnum);
+            if (dist <= chaseView) {
+                anyChasing = true;
+                break;
             }
         }
+    }
+
+    if (a.srcAmbient && a.ambientPlaying) {
         float ambGain = anyChasing ? 0.0f : (AudioTuning::MASTER * AudioTuning::AMBIENT_GAIN);
-        float chaseGain = anyChasing ? (AudioTuning::MASTER * AudioTuning::CHASE_GAIN) : 0.0f;
-        if (a.srcAmbient) {
-            a.engine.setSourceGain(a.srcAmbient, ambGain);
-            // Garante que a música ambiente esteja realmente tocando durante o gameplay
-            // quando deveria estar audível.
-            if (ambGain > 0.0f) {
-                ALint st = 0;
-                alGetSourcei(a.srcAmbient, AL_SOURCE_STATE, &st);
-                if (st != AL_PLAYING)
-                    a.engine.play(a.srcAmbient);
-            }
+        a.engine.setSourceGain(a.srcAmbient, ambGain);
+
+        // Keep ambient playing during gameplay so it resumes immediately when
+        // chase ends, even if it is currently muted.
+        ALint st = 0;
+        alGetSourcei(a.srcAmbient, AL_SOURCE_STATE, &st);
+        if (st != AL_PLAYING) {
+            a.engine.play(a.srcAmbient);
         }
+    }
+
+    if (a.srcChase && a.bufChase) {
+        float chaseGain = anyChasing ? (AudioTuning::MASTER * AudioTuning::CHASE_GAIN) : 0.0f;
         a.engine.setSourceGain(a.srcChase, chaseGain);
 
         if (anyChasing) {
@@ -403,8 +495,10 @@ void audioUpdate(
             if (st != AL_PLAYING) {
                 a.engine.play(a.srcChase);
             }
+            a.chasePlaying = true;
         } else {
             a.engine.stop(a.srcChase);
+            a.chasePlaying = false;
         }
     }
 

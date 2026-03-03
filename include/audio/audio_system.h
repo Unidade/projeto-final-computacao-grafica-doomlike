@@ -54,6 +54,8 @@ struct AudioSystem {
     ALuint srcBreath = 0;
 
     bool stepPlaying = false;
+    bool ambientPlaying = false;
+    bool chasePlaying = false;
     bool victoryPlaying = false;
     bool introPlaying = false;
 
@@ -87,3 +89,7 @@ void audioPlayPumpClick(AudioSystem& a);
 void audioPlayHurt(AudioSystem& a);
 void audioPlayKillAt(AudioSystem& a, float x, float z);
 void audioPlayBatteryPickup(AudioSystem& a);
+
+void audioStartGameplayMusic(AudioSystem& a);
+void audioStartMenuMusic(AudioSystem& a);
+void audioStartVictoryMusic(AudioSystem& a);
