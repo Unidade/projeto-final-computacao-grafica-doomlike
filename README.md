@@ -1,30 +1,58 @@
-# DoomLike OpenGL Project
+# Luzes Apagadas
 
-A Doom-like first-person shooter game built with OpenGL (fixed pipeline + GLSL 1.20), GLUT for window/input management, and GLEW for modern OpenGL features.
+Um jogo de tiro em primeira pessoa estilo Doom, desenvolvido com OpenGL (pipeline fixo + GLSL 1.20), GLUT para gerenciamento de janela/entrada, e OpenAL para sistema de áudio.
 
 ## Demo
-https://github.com/user-attachments/assets/be16fdec-675c-429a-895a-5aeb3071632c
+
+https://github.com/user-attachments/assets/be16fdec-7d5c-429a-895a-5aeb3071632c
+
+Vídeo local: `demo-projeto-compgrafica.mp4`
 
 ---
 
-## Requirements
+## Arquitetura do Projeto
 
-### Build Tools
+O projeto está organizado em módulos separados por responsabilidade:
+
+```
+projeto-doom-computacao-grafica/
+├── main.cpp                 # Ponto de entrada
+├── src/                     # Implementações
+│   ├── audio/              # Sistema de áudio (OpenAL)
+│   ├── core/               # Lógica do jogo, entidades, câmera, movimento
+│   ├── graphics/           # Renderização, shaders, texturas, HUD, menu
+│   ├── input/              # Entrada do usuário (teclado, mouse)
+│   ├── level/              # Carregamento, validação e métricas de mapas
+│   ├── utils/              # Utilitários e gerenciamento de assets
+│   └── tools/              # Ferramentas auxiliares (validador de níveis)
+├── include/                 # Headers organizados por módulo
+│   ├── audio/, core/, graphics/, input/, level/, utils/
+├── shaders/                 # Shaders GLSL (lava, sangue, postes, transições)
+├── maps/                    # Arquivos de mapa (.txt)
+├── assets/                  # Texturas, áudios e outros recursos
+└── build/                   # Diretório de compilação
+```
+
+---
+
+## Requisitos
+
+### Ferramentas de Build
 - CMake 3.16+
-- C++17 compatible compiler (g++, clang++, or MSVC)
+- Compatível com C++17 (g++, clang++, ou MSVC)
 
-### Essential Libraries
+### Bibliotecas
 
-| Library | Linux Package | Windows (MSYS2) | Description |
-|---------|---------------|-----------------|-------------|
-| GLEW | `libglew-dev` | `mingw-w64-x86_64-glew` | OpenGL extension loading |
-| GLUT/freeglut | `freeglut3-dev` | `mingw-w64-x86_64-freeglut` | Window and input management |
-| OpenGL | `libgl1-mesa-dev` | included in MinGW | Graphics rendering |
-| OpenAL | `libopenal-dev` | `mingw-w64-x86_64-openal` | Audio system |
+| Biblioteca | Linux (Ubuntu/Debian) | Windows (MSYS2) | Descrição |
+|------------|----------------------|-----------------|-----------|
+| GLEW | `libglew-dev` | `mingw-w64-x86_64-glew` | Carregamento de extensões OpenGL |
+| GLUT/freeglut | `freeglut3-dev` | `mingw-w64-x86_64-freeglut` | Gerenciamento de janela e entrada |
+| OpenGL | `libgl1-mesa-dev` | incluído no MinGW | Renderização gráfica |
+| OpenAL | `libopenal-dev` | `mingw-w64-x86_64-openal` | Sistema de áudio |
 
 ---
 
-## Installation
+## Instalação
 
 ### Linux (Ubuntu/Debian)
 
@@ -41,8 +69,8 @@ sudo pacman -S cmake gcc glew freeglut mesa openal
 
 ### Windows (MSYS2)
 
-1. Install [MSYS2](https://www.msys2.org/)
-2. Open MSYS2 UCRT64 terminal and run:
+1. Instale [MSYS2](https://www.msys2.org/)
+2. Abra o terminal MSYS2 UCRT64 e execute:
 
 ```bash
 pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-glew mingw-w64-x86_64-freeglut mingw-w64-x86_64-openal
@@ -50,9 +78,9 @@ pacman -S mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake mingw-w64-x86_64-glew ming
 
 ---
 
-## Building
+## Compilação
 
-### Using CMake (Recommended)
+### Usando CMake (Recomendado)
 
 **Linux:**
 ```bash
@@ -68,13 +96,13 @@ cmake --build build
 ./build/DoomLike.exe
 ```
 
-### Using VS Code
+### Usando VS Code
 
-1. Open the project in VS Code
-2. Press `Ctrl+Shift+B` to build
-3. Press `F5` to debug/run
+1. Abra o projeto no VS Code
+2. Pressione `Ctrl+Shift+B` para compilar
+3. Pressione `F5` para depurar/executar
 
-### Legacy Makefile (Linux only)
+### Makefile Legado (somente Linux)
 ```bash
 make
 make run
@@ -82,34 +110,37 @@ make run
 
 ---
 
-## Controls
+## Controles
 
-| Key | Action |
-|-----|--------|
-| **W, A, S, D** | Move |
-| **Mouse** | Look around |
-| **F** | Toggle flashlight |
-| **Alt + Enter** | Toggle fullscreen |
-| **ESC** | Exit |
+| Tecla | Ação |
+|-------|------|
+| **W, A, S, D** | Movimentação |
+| **Mouse** | Olhar ao redor |
+| **F** | Alternar lanterna |
+| **Alt + Enter** | Alternar tela cheia |
+| **ESC** | Sair |
 
 ---
 
-## Map Format
+## Formato do Mapa
 
-Maps are defined in `.txt` files using ASCII characters:
+Mapas são definidos em arquivos `.txt` usando caracteres ASCII:
 
-| Character | Description |
-|-----------|-------------|
-| `1` | Wall |
-| `0` | Floor |
-| `L` | Lava (shader effect) |
-| `B` | Blood (shader effect) |
-| `9` | Player spawn |
-| `J, T, M, K, G` | Enemy spawn |
-| `H` | Health item |
-| `A` | Ammo item |
+| Caractere | Descrição |
+|-----------|-----------|
+| `1` | Parede |
+| `0` | Chão |
+| `9` | Spawn do jogador |
+| `L` | Lava (efeito shader) |
+| `B` | Sangue (efeito shader) |
+| `P` | Poste de luz |
+| `V` | Inimigo tipo V |
+| `Y` | Inimigo tipo Y |
+| `G` | Inimigo tipo G |
+| `H` | Item de vida |
+| `D` | Portal para próximo nível |
 
-### Example Map
+### Exemplo de Mapa
 ```
 1111111111
 1000000001
@@ -118,3 +149,14 @@ Maps are defined in `.txt` files using ASCII characters:
 1000000001
 1111111111
 ```
+
+---
+
+## Shaders Disponíveis
+
+- **lava.frag/vert**: Efeito de animação de lava
+- **blood.frag/vert**: Efeito de animação de sangue
+- **lightpost.frag/vert**: Efeito de postes de luz
+- **battery_flash.frag/vert**: Efeito de lanterna
+- **level_transition.frag/vert**: Efeito de transição entre níveis
+- **melt.frag/vert**: Efeito de derretimento
